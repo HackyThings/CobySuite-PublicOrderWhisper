@@ -32,7 +32,7 @@
 --   funnel.Menu             -- the menu frame; funnel.Menu.rows[i].key
 --   funnel.ResetButton
 ---------------------------------------------------------------------------
-local UI = CobySuite.UI
+local UI = CobySuite_PublicOrderWhisper.UI
 
 local BUTTON_WIDTH = 18
 local BUTTON_HEIGHT = 19

@@ -11,13 +11,20 @@
 --   })
 --   Message("Loaded.")             -- "[Coby's Currency Searcher] Loaded."
 --   Message("Scanned 12 items", true)   -- second argument reaches opts.gate only
+--   Message.Success("Saved.")      -- the text in green (U.Colors.TEXT_GREEN)
+--   Message.Warn("Nothing to do.") -- the text in gold (U.Colors.TEXT_GOLD)
 --
 -- The gate lets an addon keep a "verbose" mode: return false to drop the
--- line. Without a gate every call prints.
+-- line. Without a gate every call prints. Success and Warn take the same
+-- second argument and go through the same gate and prefix.
+--
+-- The messenger is a callable table (a metatable __call), not a function:
+-- call it, pass it as a callback or to Slash.Register as before, but do not
+-- test it with type(x) == "function".
 ---------------------------------------------------------------------------
-CobySuite.Chat = CobySuite.Chat or {}
-local Chat = CobySuite.Chat
-local U = CobySuite.Utilities
+CobySuite_PublicOrderWhisper.Chat = CobySuite_PublicOrderWhisper.Chat or {}
+local Chat = CobySuite_PublicOrderWhisper.Chat
+local U = CobySuite_PublicOrderWhisper.Utilities
 
 local function ToHex(color)
   if type(color) == "string" then
@@ -39,10 +46,22 @@ function Chat.NewMessenger(opts)
     prefix = U.WrapColor(ToHex(opts.color), prefix) .. (opts.separator or " ")
   end
   local gate = opts.gate
-  return function(text, verboseOnly)
+
+  local function Print(text, verboseOnly)
     if gate and not gate(verboseOnly) then return end
     print(prefix .. tostring(text))
   end
+
+  local messenger = {}
+  function messenger.Success(text, verboseOnly)
+    Print(U.WrapColor(U.Colors.TEXT_GREEN, tostring(text)), verboseOnly)
+  end
+  function messenger.Warn(text, verboseOnly)
+    Print(U.WrapColor(U.Colors.TEXT_GOLD, tostring(text)), verboseOnly)
+  end
+  return setmetatable(messenger, {
+    __call = function(_, text, verboseOnly) Print(text, verboseOnly) end,
+  })
 end
 
 ---------------------------------------------------------------------------

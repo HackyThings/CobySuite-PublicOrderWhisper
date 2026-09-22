@@ -26,8 +26,14 @@
 --     point = { "CENTER", UIParent, "CENTER", 0, 80 },   -- initial anchor for a window without persist
 --     mixin = MyWindowMixin,                   -- optional, applied before anything else
 --     onDragStop = function(f) end,            -- optional, after the state is saved
+--     onResizeStop = function(f) end,          -- optional, likewise after a resize
 --   })
---   f:SaveState()      f:RestoreState()      f:Toggle()
+--   Moving and sizing start on the left button and also end (state saved,
+--   callback run) when the window hides mid-drag. A resizable window is
+--   brought inside its bounds each time it shows and after RestoreState: a
+--   size saved before the bounds grew (by persist, or by the client's own
+--   layout cache for a named window the player moved) never hides content.
+--   f:SaveState()      f:RestoreState()      f:FitToBounds()      f:Toggle()
 --
 -- Escape: UISpecialFrames is the standard path (CloseSpecialWindows calls
 -- Hide() directly, so it works in combat). The OnKeyDown +
@@ -39,8 +45,8 @@
 -- Close button: BasicFrameTemplate's default routes through HideUIPanel,
 -- which silently no-ops in combat; the override is a plain Hide().
 ---------------------------------------------------------------------------
-local UI = CobySuite.UI
-local U = CobySuite.Utilities
+local UI = CobySuite_PublicOrderWhisper.UI
+local U = CobySuite_PublicOrderWhisper.Utilities
 
 local WindowMixin = {}
 
@@ -62,6 +68,19 @@ function WindowMixin:RestoreState()
   UI.RestoreWindowState(self, ResolveSV(persist), persist.key, persist.defaults)
   if persist.fixedSize then
     self:SetSize(self._width, self._height)
+  end
+  self:FitToBounds()
+end
+
+-- Brings the size inside the resize bounds (a resizable window only)
+function WindowMixin:FitToBounds()
+  local b = self._bounds
+  if not b then return end
+  local w, h = self:GetSize()
+  local fitW = math.min(math.max(w, b.minWidth), b.maxWidth)
+  local fitH = math.min(math.max(h, b.minHeight), b.maxHeight)
+  if fitW ~= w or fitH ~= h then
+    self:SetSize(fitW, fitH)
   end
 end
 
@@ -109,27 +128,67 @@ function UI.CreateWindow(opts)
     f.TitleText:SetText(opts.title)
   end
 
+  -- Moving and sizing start on the left button only (RegisterForDrag covers
+  -- the drag) and end the normal way, saving the state, on release or when
+  -- the window hides mid-drag (Escape, a close from code), so a drag that
+  -- loses its release still stops and saves. A child frame carries the
+  -- OnHide, so a window's own OnHide script cannot replace it.
+  local function StopMoving(self)
+    if not self._moving then return end
+    self._moving = false
+    self:StopMovingOrSizing()
+    self:SaveState()
+    if opts.onDragStop then opts.onDragStop(self) end
+  end
+
+  local function StopSizing(self)
+    if not self._sizing then return end
+    self._sizing = false
+    self:StopMovingOrSizing()
+    self:SaveState()
+    if opts.onResizeStop then opts.onResizeStop(self) end
+  end
+
   if opts.movable ~= false then
     f:SetMovable(true)
     f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    f:SetScript("OnDragStop", function(self)
-      self:StopMovingOrSizing()
-      self:SaveState()
-      if opts.onDragStop then opts.onDragStop(self) end
+    f:SetScript("OnDragStart", function(self)
+      self._moving = true
+      self:StartMoving()
     end)
+    f:SetScript("OnDragStop", StopMoving)
   end
 
   if opts.resizable then
     local r = opts.resizable
+    f._bounds = {
+      minWidth = r.minWidth or 200, minHeight = r.minHeight or 150,
+      maxWidth = r.maxWidth or 1600, maxHeight = r.maxHeight or 1000,
+    }
     f:SetResizable(true)
-    f:SetResizeBounds(r.minWidth or 200, r.minHeight or 150, r.maxWidth or 1600, r.maxHeight or 1000)
+    f:SetResizeBounds(f._bounds.minWidth, f._bounds.minHeight, f._bounds.maxWidth, f._bounds.maxHeight)
     f.ResizeGrip = UI.CreateResizeGrip(f)
-    f.ResizeGrip:SetScript("OnMouseDown", function() f:StartSizing("BOTTOMRIGHT") end)
-    f.ResizeGrip:SetScript("OnMouseUp", function()
-      f:StopMovingOrSizing()
-      f:SaveState()
-      if opts.onResizeStop then opts.onResizeStop(f) end
+    f.ResizeGrip:SetScript("OnMouseDown", function(_, button)
+      if button ~= "LeftButton" then return end
+      f._sizing = true
+      f:StartSizing("BOTTOMRIGHT")
+    end)
+    f.ResizeGrip:SetScript("OnMouseUp", function(_, button)
+      if button ~= "LeftButton" then return end
+      StopSizing(f)
+    end)
+  end
+
+  if opts.movable ~= false or opts.resizable then
+    local hideWatcher = CreateFrame("Frame", nil, f)
+    hideWatcher:SetScript("OnHide", function()
+      StopMoving(f)
+      StopSizing(f)
+    end)
+    -- The child shows with the window, and a window's own OnShow script
+    -- cannot replace this one
+    hideWatcher:SetScript("OnShow", function()
+      f:FitToBounds()
     end)
   end
 

@@ -1,1 +1,1 @@
-PublicOrderWhisper.EventBus = CobySuite.EventBus.New()
+PublicOrderWhisper.EventBus = CobySuite_PublicOrderWhisper.EventBus.New()

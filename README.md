@@ -19,7 +19,7 @@ Public orders are anonymous by design: you cannot reply to one, and reaching the
 3. **Click it.** The player is whispered your message. `{item}` in the message becomes a link to the item they asked for, at the quality tier they asked for; `{name}` becomes their name and `{tip}` the tip they offered.
 4. **The bubble turns green** for everyone you have whispered this session, so you do not message the same person twice by accident. A per-player cooldown (60 seconds by default, up to 120) refuses repeat clicks in the meantime.
 5. **Offline or misspelt?** If the game reports that the player could not be found, the bubble flashes red and the green mark is removed.
-6. **Prefer to edit before sending?** Turn on "Put the whisper in my chat box" in the settings. Each click then fills your chat box with the whisper, ready to change, and Enter sends it.
+6. **Prefer to edit before sending?** Turn on "Put the whisper in my chat box" in the settings. Each click then fills your chat box with the whisper, ready to change, and Enter sends it. In this mode the addon cannot tell whether you pressed Enter, so the click does not turn the bubble green, start the cooldown, or watch for an offline reply.
 
 Placeholders in the message:
 
@@ -29,7 +29,7 @@ Placeholders in the message:
 | `{name}` | The customer's character name, without the realm |
 | `{tip}` | The tip the customer set on the order, before the consortium cut, as plain text (for example "150g 25s") |
 
-WoW whispers are limited to 255 characters, and an item link counts for about 100 of them. The settings window shows a preview with a real link so you can see how the message reads and whether it fits; a message that would run over is not sent, and the addon tells you so.
+WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented letter (é, ñ, ü) is two, and an item link takes about 100. The message box counts bytes, and the settings window shows a preview with a real link so you can see how the message reads, and the preview turns red with the byte count if even the example link does not fit; a message that would run over is not sent, and the addon tells you so.
 
 ## Install
 
@@ -44,7 +44,7 @@ WoW whispers are limited to 255 characters, and an item link counts for about 10
 /pow message <text>    Set the whisper message ({item}, {name}, {tip})
 /pow message           Show the current message
 /pow cooldown <sec>    Per-player cooldown in seconds, 0 to turn it off
-/pow test              Whisper the current message to yourself
+/pow selftest          Whisper the current message to yourself
 /pow reset             Restore every setting to its default
 /pow debug             Toggle the debug log window
 /pow version           Print the addon version
@@ -55,10 +55,10 @@ WoW whispers are limited to 255 characters, and an item link counts for about 10
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders window, the addon's entry in the minimap addon list, or Options > AddOns > Public Order Whisper. Every option applies the moment you change it.
+Open with `/pow settings`, the gear beside the close button of the crafting orders window, the addon's entry in the minimap addon list, or Options > AddOns > Public Order Whisper. The settings are grouped into categories on the left. Changes take effect when you press Apply; Cancel or closing the window throws them away. Defaults fills in every default, and nothing changes until you press Apply.
 
 **Message**
-- The whisper text, with a live preview and a button that whispers it to you as a test.
+- The whisper text, with a live preview and a button that whispers it to you as a test (both use the text in the box, before you apply it).
 
 **Buttons**
 - Whisper icon in the order list, Public tab (default on)
@@ -66,7 +66,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 - Turn the icon green for players whispered this session (default on)
 
 **Sending**
-- Put the whisper in my chat box instead of sending it (default off. The click fills your chat box with the whisper so you can edit it; Enter sends.)
+- Put the whisper in my chat box instead of sending it (default off. The click fills your chat box with the whisper so you can edit it; Enter sends. While it is on, clicks do not turn the bubble green, start the cooldown or flash red for an offline player.)
 - Print a chat line for each whisper sent (default on. Errors and failed whispers are always printed.)
 - Cooldown per player (default 60 seconds, up to 120. Off sends every click.)
 
@@ -80,7 +80,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 
 **The whisper was not sent and chat says it is too long.**
 
-- The item link is long. Shorten the message in `/pow settings`; the preview shows the length with a real link.
+- The item link is long, and a real order's link is often longer than the example in the preview. The chat line gives the whisper's size in bytes. Shorten the message in `/pow settings` by at least the difference. The counter under the box shows the message's bytes without the link, and accented letters count as two.
 
 **The bubble flashed red.**
 
@@ -88,7 +88,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 
 **I see "attempt to perform arithmetic on a secret number value" errors from MoneyFrame with another crafting-order addon installed.**
 
-- That error comes from the other addon rebuilding Blizzard's order table. Public Order Whisper quietly drops that specific error so it does not spam you; nothing else is affected.
+- That error comes from the other addon rebuilding Blizzard's order table. Public Order Whisper drops that one error when it comes from the crafting orders list, so it does not spam you. The same error from anywhere else, and every other error, still reaches your error display, and the first one dropped is written to `/pow debug` with its details; the log notes the total again at 10, 100 and 1000. If an error addon such as BugSack handles your errors, it takes over and keeps showing them.
 
 ## License
 

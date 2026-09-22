@@ -3,7 +3,7 @@ local Config = PublicOrderWhisper.Config
 ---------------------------------------------------------------------------
 -- Shared config base via CobySuite.Config.New
 ---------------------------------------------------------------------------
-local base = CobySuite.Config.New({
+local base = CobySuite_PublicOrderWhisper.Config.New({
   savedVariable = "PUBLIC_ORDER_WHISPER_CONFIG",
   options = {
     WHISPER_MESSAGE    = "whisper_message",     -- template; {item}, {name} and {tip} are replaced per order
@@ -23,6 +23,18 @@ local base = CobySuite.Config.New({
     ["chat_feedback"]      = true,
     ["open_in_chat"]       = false,
   },
+  -- Set refuses a failing value and InitializeData puts the default back for
+  -- a failing saved one (a hand-edited or damaged file). Everything 1.0.0
+  -- could save passes: its slider and /pow cooldown stored whole seconds.
+  validate = {
+    ["whisper_message"]    = { type = "string" },
+    ["whisper_cooldown"]   = { type = "number", min = 0, max = 120, integer = true },
+    ["show_list_buttons"]  = { type = "boolean" },
+    ["show_detail_button"] = { type = "boolean" },
+    ["mark_whispered"]     = { type = "boolean" },
+    ["chat_feedback"]      = { type = "boolean" },
+    ["open_in_chat"]       = { type = "boolean" },
+  },
   debug = PublicOrderWhisper.Debug,
   onSet = function(name, old, value)
     PublicOrderWhisper.EventBus:Fire(PublicOrderWhisper.Events.ConfigChanged, name, value, old)
@@ -36,12 +48,15 @@ local base = CobySuite.Config.New({
 Config.Options       = base.Options
 Config.Defaults      = base.Defaults
 Config.IsValidOption = base.IsValidOption
+Config.CheckValue    = base.CheckValue
 Config.Get           = base.Get
 Config.Set           = base.Set
 Config.Reset         = base.Reset
 
--- The longest whisper WoW sends; the settings window and the slash command
--- cap the template here, and the whisper module checks the built message.
+-- The longest whisper WoW sends, in bytes (an accented letter takes two;
+-- treated as bytes until checked against the live server). The settings box
+-- and the slash command cap the template here, and the whisper module checks
+-- the built message, item link included.
 Config.MAX_MESSAGE_LENGTH = 255
 Config.MAX_COOLDOWN = 120
 
@@ -51,7 +66,7 @@ Config.MAX_COOLDOWN = 120
 function Config.InitializeData()
   base.InitializeData()
 
-  if PUBLIC_ORDER_WHISPER_WINDOW_STATE == nil then
+  if type(PUBLIC_ORDER_WHISPER_WINDOW_STATE) ~= "table" then
     PUBLIC_ORDER_WHISPER_WINDOW_STATE = {}
   end
 
