@@ -127,7 +127,7 @@ PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
     -- Development only: the suites are stripped from release builds, and
     -- available() hides the command from help there. The whisper this
     -- command sent in 1.0.0 is /pow selftest; in a release build the
-    -- fallback below says so
+    -- fallback above says so
     {
       name = "test", usage = "test [suite]",
       help = "Open the in-game test window, optionally running one suite",

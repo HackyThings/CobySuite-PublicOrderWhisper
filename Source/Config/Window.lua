@@ -74,7 +74,6 @@ local function BuildMessage(panel, window)
       legend:SetText("{item} = crafted item link, {name} = customer's name, {tip} = the tip on the order")
       local c = U.Colors.LABEL_GRAY
       legend:SetTextColor(c[1], c[2], c[3])
-      row.Legend = legend
     end,
   }
 

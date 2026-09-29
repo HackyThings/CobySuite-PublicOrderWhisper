@@ -4,6 +4,19 @@ All notable changes to Public Order Whisper are documented here. Format follows 
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-29
+
+### Changed
+
+- **Windows no longer stay on top of the game's own windows.** Public Order Whisper's windows now sit with the game's panels: clicking any window brings it to the front, and a window opens in front. Only questions that need an answer, such as confirmations, stay above everything.
+- The settings window can now be made bigger by dragging its bottom-right corner, and it remembers its size.
+- Settings sections sit closer together, so each group reads as one block.
+- The command list in chat (`/pow help`) is easier to read: commands in gold and their descriptions in white.
+
+### Fixed
+
+- **Blocked-action errors after opening the settings from the game's menu:** pressing **Open Settings** on the Public Order Whisper page under Options > AddOns brought the game menu back behind the settings window, and the game blamed Public Order Whisper for SpellStopCasting, SpellStopTargeting and an unnamed protected action ("Public Order Whisper has been blocked from an action only available to the Blizzard UI"). The button now just closes Options and opens the settings window.
+
 ## [1.0.1] - 2026-09-21
 
 ### Changed
@@ -36,6 +49,7 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.2
 [1.0.1]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.1
 [1.0.0]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.0

@@ -15,21 +15,21 @@ Public orders are anonymous by design: you cannot reply to one, and reaching the
 ## How It Works
 
 1. **Open the crafting orders at a profession table and pick the Public tab.** Every order placed by someone else shows a chat bubble after the customer's name. Your own orders get none. The same bubble sits next to the customer's name when you open an order.
-2. **Hover the bubble** to see the message that will be sent.
+2. **Hover the bubble** to see who it whispers and your message as you wrote it; `{item}`, `{name}` and `{tip}` are filled in when you click.
 3. **Click it.** The player is whispered your message. `{item}` in the message becomes a link to the item they asked for, at the quality tier they asked for; `{name}` becomes their name and `{tip}` the tip they offered.
 4. **The bubble turns green** for everyone you have whispered this session, so you do not message the same person twice by accident. A per-player cooldown (60 seconds by default, up to 120) refuses repeat clicks in the meantime.
-5. **Offline or misspelt?** If the game reports that the player could not be found, the bubble flashes red and the green mark is removed.
+5. **Offline or misspelt?** If the game reports that the player could not be found, the bubble flashes red and the green mark is removed; the cooldown still runs, so a retry waits it out.
 6. **Prefer to edit before sending?** Turn on "Put the whisper in my chat box" in the settings. Each click then fills your chat box with the whisper, ready to change, and Enter sends it. In this mode the addon cannot tell whether you pressed Enter, so the click does not turn the bubble green, start the cooldown, or watch for an offline reply.
 
 Placeholders in the message:
 
 | Placeholder | Becomes |
 |-------------|---------|
-| `{item}` | A link to the crafted item, at the requested quality when the order sets one (recraft orders link the item being recrafted) |
+| `{item}` | A link to the crafted item, at the requested quality when the order sets one; a recraft order links the item being recrafted when the game gives no crafted-item link for it |
 | `{name}` | The customer's character name, without the realm |
 | `{tip}` | The tip the customer set on the order, before the consortium cut, as plain text (for example "150g 25s") |
 
-WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented letter (é, ñ, ü) is two, and an item link takes about 100. The message box counts bytes, and the settings window shows a preview with a real link so you can see how the message reads, and the preview turns red with the byte count if even the example link does not fit; a message that would run over is not sent, and the addon tells you so.
+WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented letter (é, ñ, ü) is two, and an item link takes about 100. The message box counts bytes. The settings window shows a preview with an example item link, and adds a red note with the byte count when even that example would not fit. A message that would run over is not sent, and the addon tells you so.
 
 ## Install
 
@@ -43,7 +43,8 @@ WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented l
 /pow settings          Open the settings window
 /pow message <text>    Set the whisper message ({item}, {name}, {tip})
 /pow message           Show the current message
-/pow cooldown <sec>    Per-player cooldown in seconds, 0 to turn it off
+/pow cooldown <sec>    Per-player cooldown in seconds, 0 to 120 (0 turns it off)
+/pow cooldown          Show the current cooldown
 /pow selftest          Whisper the current message to yourself
 /pow reset             Restore every setting to its default
 /pow debug             Toggle the debug log window
@@ -55,10 +56,10 @@ WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented l
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders window, the addon's entry in the minimap addon list, or Options > AddOns > Public Order Whisper. The settings are grouped into categories on the left. Changes take effect when you press Apply; Cancel or closing the window throws them away. Defaults fills in every default, and nothing changes until you press Apply.
+Open with `/pow settings`, the gear beside the close button of the crafting orders window, the addon's entry in the minimap addon list, or the Open Settings button on its page under Options > AddOns. The settings are grouped into categories on the left. Changes take effect when you press Apply; Cancel or closing the window throws them away. Defaults asks first, then fills in every default, and nothing changes until you press Apply. Drag the window's bottom-right corner to make it bigger; it keeps that size.
 
 **Message**
-- The whisper text, with a live preview and a button that whispers it to you as a test (both use the text in the box, before you apply it).
+- The whisper text (default: Hi! I can craft {item} for you. Send me a personal order!), with a live preview and a button that whispers it to you as a test (both use the text in the box, before you apply it).
 
 **Buttons**
 - Whisper icon in the order list, Public tab (default on)
@@ -76,6 +77,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 
 - Only the Public tab gets bubbles, and only on orders placed by other players.
 - Check that "Whisper icon in the order list" is on in `/pow settings`.
+- In combat, a row that has not had a bubble yet gets one when combat ends.
 - Run `/pow debug`. If the log says the customer name cell could not be found, another addon has reshaped the order list or a WoW patch changed it. The log is what I need to fix it (see below).
 
 **The whisper was not sent and chat says it is too long.**
@@ -101,7 +103,7 @@ For bug reports, the cleanest path is the debug log. It is self-contained: it in
 **How to capture and send:**
 
 1. Reproduce the issue.
-2. Run `/pow debug` to open the debug window. Copy the last ~250 entries.
+2. Run `/pow debug` to open the debug window and click **Copy Last 250**.
 3. Email them to **hackythings@gmail.com** with a sentence about what you were doing.
 
 **Other channels:**

@@ -47,7 +47,6 @@ local base = CobySuite_PublicOrderWhisper.Config.New({
 -- Install onto PublicOrderWhisper.Config namespace
 Config.Options       = base.Options
 Config.Defaults      = base.Defaults
-Config.IsValidOption = base.IsValidOption
 Config.CheckValue    = base.CheckValue
 Config.Get           = base.Get
 Config.Set           = base.Set

@@ -689,7 +689,8 @@ end
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", SetupHooks)
 
--- Rows that needed a new button during combat are laid out once it ends.
+-- Once combat ends: the detail button and the settings gear when SetupHooks
+-- ran in combat, and a re-lay for rows that needed a new button meanwhile.
 local regenFrame = CreateFrame("Frame")
 regenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 regenFrame:SetScript("OnEvent", function()
@@ -712,8 +713,7 @@ C_Item.RequestLoadItemDataByID(SAMPLE_ITEM_ID)
 -------------------------------------------------------------------------------
 local configListener = {}
 
-function configListener:ReceiveEvent(event, name)
-  if event ~= PublicOrderWhisper.Events.ConfigChanged then return end
+function configListener:ReceiveEvent(_, name)
   local O = Config.Options
   if name == nil or name == O.SHOW_LIST_BUTTONS or name == O.MARK_WHISPERED then
     if refreshRowButtons then refreshRowButtons:Call() end
@@ -763,8 +763,7 @@ end
 
 local failureFrame = CreateFrame("Frame")
 failureFrame:RegisterEvent("CHAT_MSG_SYSTEM")
-failureFrame:SetScript("OnEvent", function(_, event, message)
-  if event ~= "CHAT_MSG_SYSTEM" then return end
+failureFrame:SetScript("OnEvent", function(_, _, message)
   HandleSystemMessage(message)
 end)
 
