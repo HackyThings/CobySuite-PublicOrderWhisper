@@ -1,6 +1,6 @@
 ## Interface: 120100
-## Title: Public Order Whisper
-## Version: 1.0.2
+## Title: Coby's Public Order Whisper
+## Version: 1.0.3
 ## Author: Cobanyte
 ## Notes: Adds a whisper button to public crafting orders that sends your message, with the item link, to the player who placed the order.
 ## IconTexture: Interface\Icons\UI_Chat
@@ -22,6 +22,7 @@ Libs\CobySuite\Source\UI\Window.lua
 Libs\CobySuite\Source\UI\FilterMenu.lua
 Libs\CobySuite\Source\UI\SettingsWindow.lua
 Libs\CobySuite\Source\UI\Launcher.lua
+Libs\CobySuite\Source\UI\Guide.lua
 Libs\CobySuite\Source\Debug\Logger.lua
 Libs\CobySuite\Source\Debug\Window.lua
 
@@ -36,9 +37,16 @@ Source\Debug\Window.lua
 # Utilities
 Source\Utilities\Main.lua
 
+# Data
+Source\Data\Changelog.lua
+
 # Config
 Source\Config\Main.lua
 Source\Config\Window.lua
 
 # Whisper
 Source\Whisper\Main.lua
+
+# UI
+Source\UI\Guide.lua
+Source\UI\WhatsNew.lua

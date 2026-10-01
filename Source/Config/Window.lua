@@ -3,8 +3,8 @@
 --
 -- The suite's standard settings window (CobySuite.UI.CreateSettingsWindow):
 -- a sidebar with Message, Buttons and Sending, staged edits that Apply
--- writes through Config.Set, Cancel, and Defaults (with its own confirm
--- popup). The message preview and the test whisper follow the staged text,
+-- writes through Config.Set, Cancel, Defaults (with its own confirm popup)
+-- and a Guide button that opens the feature guide (UI/Guide.lua). The message preview and the test whisper follow the staged text,
 -- so they show what Apply would save. Built at load, so opening it never
 -- creates frames in combat; the controls are painted from config on every
 -- show, and a ConfigChanged event (/pow message, /pow cooldown, /pow reset)
@@ -31,7 +31,7 @@ local PREVIEW_ROW = 80
 local function PreviewText(template)
   template = template or ""
   if strtrim(template) == "" then
-    return U.WrapColor("FF4C4C", "No message set; the whisper buttons will do nothing.")
+    return U.WrapColor(U.Colors.WARNING_RED, "No message set; the whisper buttons will do nothing.")
   end
   local Whisper = PublicOrderWhisper.Whisper
   local values = Whisper.SampleValues and Whisper.SampleValues() or {}
@@ -39,9 +39,9 @@ local function PreviewText(template)
   local length = #text   -- bytes, the unit of WoW's limit
   local suffix = ""
   if length > Config.MAX_MESSAGE_LENGTH then
-    suffix = U.WrapColor("FF4C4C", (" (%d bytes and WoW allows %d; accented letters count as two)"):format(length, Config.MAX_MESSAGE_LENGTH))
+    suffix = U.WrapColor(U.Colors.WARNING_RED, (" (%d bytes and WoW allows %d; accented letters count as two)"):format(length, Config.MAX_MESSAGE_LENGTH))
   end
-  return U.WrapColor("AAAAAA", "Preview: ") .. text .. suffix
+  return U.WrapColor(U.Colors.LABEL_GRAY, "Preview: ") .. text .. suffix
 end
 
 local function BuildMessage(panel, window)
@@ -142,7 +142,8 @@ end
 
 local window = UI.CreateSettingsWindow({
   name    = "PublicOrderWhisperOptionsWindow",
-  title   = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Public Order Whisper") .. " Settings",
+  title   = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. " Settings",
+  icon    = PublicOrderWhisper.ICON,
   config  = Config,
   width   = WINDOW_W,
   height  = WINDOW_H,
@@ -152,6 +153,13 @@ local window = UI.CreateSettingsWindow({
   },
   watch   = { bus = PublicOrderWhisper.EventBus, event = PublicOrderWhisper.Events.ConfigChanged },
   message = function(text) PublicOrderWhisper.Utilities.Message(text) end,
+  footerButtons = {
+    {
+      text = "Guide", width = 80,
+      tooltip = "Open the feature guide: the whisper bubbles, your message, and what the colors mean.",
+      onClick = function() if PublicOrderWhisper.Guide then PublicOrderWhisper.Guide.Toggle() end end,
+    },
+  },
   categories = {
     { key = "message", label = "Message", build = BuildMessage },
     { key = "buttons", label = "Buttons", build = BuildButtons },
@@ -175,7 +183,7 @@ end
 -------------------------------------------------------------------------------
 EventUtil.ContinueOnAddOnLoaded("PublicOrderWhisper", function()
   UI.RegisterSettingsCategory({
-    name        = "Public Order Whisper",
+    name        = "Coby's Public Order Whisper",
     brandColor  = PublicOrderWhisper.BRAND_COLOR,
     version     = PublicOrderWhisper.VERSION,
     description = {

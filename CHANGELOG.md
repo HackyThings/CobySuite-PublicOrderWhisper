@@ -1,8 +1,26 @@
 # Changelog
 
-All notable changes to Public Order Whisper are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), version numbering follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to Coby's Public Order Whisper are documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), version numbering follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.0.3] - 2026-10-01
+
+### Added
+
+- **Guide:** `/pow guide`, or the new **Guide** button in the settings window, opens a short guide to the whisper bubbles, your message and its placeholders, the green and red colors, the cooldown and the settings. It opens by itself once for new players; if you already use Coby's Public Order Whisper, nothing pops up.
+- **What's New:** `/pow changelog` shows what changed in each version. After later updates it opens by itself with the versions since you last played.
+
+### Changed
+
+- **New name:** the addon is now called **Coby's Public Order Whisper**, to match the other Coby addons in the AddOns list. Only the name changed: the addon's folder, your saved settings, your message and every `/pow` command stay as they are.
+- The commands now match the other Coby addons: `/pow options` opens the settings too, `/pow tutorial` the guide, and `/pow whatsnew` or `/pow news` the changelog. Every command you used before still works.
+- Typing just `/pow` now opens the settings, as in the other Coby addons. `/pow help` lists every command.
+- The settings window shows the addon's icon in its title.
+
+### Fixed
+
+- Resizing the settings window from its corner now stops at the edge of the screen, so the window can no longer be stretched out of reach.
 
 ## [1.0.2] - 2026-09-29
 
@@ -49,7 +67,8 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.3
 [1.0.2]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.2
 [1.0.1]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.1
 [1.0.0]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.0

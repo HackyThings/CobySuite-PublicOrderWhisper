@@ -35,16 +35,18 @@ local refreshRowButtons -- Coalesce handle that re-lays the row buttons next fra
 local whisperedPlayers = {}   -- [customerName] = true  (session-scoped)
 local pendingWhispers  = {}   -- [customerName] = expiry of the latest send's failure window
 local lastWhisperTime  = {}   -- [customerName] = time of the last send (cooldown)
-local relayAfterCombat = false -- a row needed a new button during combat
-local buildWidgetsAfterCombat  -- SetupHooks ran in combat: builds the detail button and the gear afterwards
 local warnedNameCell = false   -- the name-cell warning is logged once a session
 local UpdateAllVisibleButtons -- forward declaration (called by TrackSent, defined below)
 
+-- A re-lay of the row buttons on the next frame, once the hooks are in
+local function RelayRows()
+  if refreshRowButtons then refreshRowButtons:Call() end
+end
+
 -------------------------------------------------------------------------------
 -- Test seams: the clock, the timer and the send, read through this table at
--- call time so the WhisperSuite can stand in for them (MockHarness
--- OverrideField on Whisper._test.seams) and no whisper leaves the client
--- during a test. Production code always goes through them.
+-- call time so the WhisperSuite can stand in for them (Tests.Override on
+-- Whisper._test.seams) and no whisper leaves the client during a test. Production code always goes through them.
 -------------------------------------------------------------------------------
 local seams = {
   Now = function() return GetTime() end,
@@ -81,7 +83,7 @@ local COLOR_FAILED    = U.Colors.WARNING_RED
 
 -- Locale-safe pattern for the "No player named X is currently playing"
 -- system message: the format string with its %s turned into a capture.
-local FAILURE_PATTERN = U.EscapePattern(ERR_CHAT_PLAYER_NOT_FOUND_S):gsub("%%%%s", "(.+)")
+local FAILURE_PATTERN = U.FormatToPattern(ERR_CHAT_PLAYER_NOT_FOUND_S, true)
 
 -------------------------------------------------------------------------------
 -- Chat output. Errors always print; the per-whisper confirmation is gated by
@@ -358,22 +360,27 @@ end
 -------------------------------------------------------------------------------
 -- Button tooltip (built per hover, so it follows the settings)
 -------------------------------------------------------------------------------
+local function AddTooltipLine(tooltip, text, color, wrap)
+  tooltip:AddLine(text, color[1], color[2], color[3], wrap)
+end
+
 local function BuildWhisperTooltip(tooltip, customerName)
-  tooltip:SetText("Whisper " .. (customerName and Ambiguate(customerName, "short") or ""), 1, 1, 1)
+  local C = U.Colors
+  tooltip:SetText("Whisper " .. (customerName and Ambiguate(customerName, "short") or ""), unpack(C.HIGHLIGHT_WHITE))
   local template = Config.Get(Config.Options.WHISPER_MESSAGE)
   if template and strtrim(template) ~= "" then
-    tooltip:AddLine(template, 0.8, 0.8, 0.8, true)
+    AddTooltipLine(tooltip, template, C.LIGHT_GRAY, true)
   else
-    tooltip:AddLine("No message set. Open /pow settings.", 1, 0.3, 0.3, true)
+    AddTooltipLine(tooltip, "No message set. Open /pow settings.", C.WARNING_RED, true)
   end
   tooltip:AddLine(" ")
   if Config.Get(Config.Options.OPEN_IN_CHAT) then
-    tooltip:AddLine("Click to put the whisper in your chat box.", 0.5, 0.8, 1.0)
+    AddTooltipLine(tooltip, "Click to put the whisper in your chat box.", C.INFO_BLUE)
   else
-    tooltip:AddLine("Click to send.", 0.5, 0.8, 1.0)
+    AddTooltipLine(tooltip, "Click to send.", C.INFO_BLUE)
   end
   if customerName and whisperedPlayers[customerName] then
-    tooltip:AddLine("Already whispered this session.", 0, 1, 0)
+    AddTooltipLine(tooltip, "Already whispered this session.", C.SUCCESS_GREEN)
   end
 end
 
@@ -417,7 +424,7 @@ local function ResolveRowOrder(btn)
     return order
   end
   btn:Hide()
-  if refreshRowButtons then refreshRowButtons:Call() end
+  RelayRows()
   return nil
 end
 
@@ -500,8 +507,9 @@ local function SetupRowWhisperButton(row, order)
     if InCombatLockdown() then
       -- Root rule: no CreateFrame in combat. Blizzard keeps the orders
       -- window open through combat and a scroll or search still re-lays
-      -- the rows, so a never-used row waits for PLAYER_REGEN_ENABLED.
-      relayAfterCombat = true
+      -- the rows, so a never-used row waits for the end of combat (one
+      -- queued re-lay however many rows ask).
+      U.RunOutOfCombat(RelayRows)
       return
     end
     btn = CreateChatBubbleButton(row, ROW_ICON_SIZE)
@@ -651,7 +659,7 @@ local function SetupHooks()
       currentOrder = nil
       RefreshOrderViewButton()
       PositionSettingsButton()
-      if refreshRowButtons then refreshRowButtons:Call() end
+      RelayRows()
     end)
   end
 
@@ -669,7 +677,7 @@ local function SetupHooks()
       settingsButton = UI.CreateSettingsGearButton(browseFrame, {
         name = "PublicOrderWhisperSettingsButton",
         height = closeButton and closeButton:GetHeight() or nil,
-        tooltip = "Public Order Whisper settings",
+        tooltip = "Coby's Public Order Whisper settings",
         tooltipAnchor = "ANCHOR_LEFT",
         onClick = Config.ToggleSettings,
       })
@@ -678,32 +686,16 @@ local function SetupHooks()
     RefreshOrderViewButton()
   end
 
-  if InCombatLockdown() then
-    buildWidgetsAfterCombat = BuildWidgets
-    Debug.Log("INIT", "Hooks installed in combat; the detail button and the settings gear follow when combat ends")
-  else
-    BuildWidgets()
+  -- Queued before any row re-lay can be, so after combat the widgets come
+  -- first and the rows second
+  if U.RunOutOfCombat(BuildWidgets) then
     Debug.Log("INIT", "All hooks installed; whisper ready")
+  else
+    Debug.Log("INIT", "Hooks installed in combat; the detail button and the settings gear follow when combat ends")
   end
 end
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", SetupHooks)
-
--- Once combat ends: the detail button and the settings gear when SetupHooks
--- ran in combat, and a re-lay for rows that needed a new button meanwhile.
-local regenFrame = CreateFrame("Frame")
-regenFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-regenFrame:SetScript("OnEvent", function()
-  if buildWidgetsAfterCombat then
-    local build = buildWidgetsAfterCombat
-    buildWidgetsAfterCombat = nil
-    build()
-  end
-  if relayAfterCombat then
-    relayAfterCombat = false
-    if refreshRowButtons then refreshRowButtons:Call() end
-  end
-end)
 
 -- Warm the item cache for the settings preview and the test whisper.
 C_Item.RequestLoadItemDataByID(SAMPLE_ITEM_ID)
@@ -716,7 +708,7 @@ local configListener = {}
 function configListener:ReceiveEvent(_, name)
   local O = Config.Options
   if name == nil or name == O.SHOW_LIST_BUTTONS or name == O.MARK_WHISPERED then
-    if refreshRowButtons then refreshRowButtons:Call() end
+    RelayRows()
   end
   if name == nil or name == O.SHOW_DETAIL_BUTTON or name == O.MARK_WHISPERED then
     RefreshOrderViewButton()
@@ -735,7 +727,7 @@ PublicOrderWhisper.EventBus:Register(configListener, { PublicOrderWhisper.Events
 local function HandleSystemMessage(message)
   if not next(pendingWhispers) then return end
   -- A secret string cannot be matched or used as a table key
-  if issecretvalue and issecretvalue(message) then return end
+  if U.IsSecret(message) then return end
 
   -- string.match rather than message:match: system responses to our own
   -- whispers can be secret strings that forbid __index access.
@@ -750,7 +742,7 @@ local function HandleSystemMessage(message)
   whisperedPlayers[failedName] = nil
 
   Debug.Warn("WHISPER", "Whisper failed for %s: %s", failedName, message)
-  Message(U.WrapColor("FF4C4C", failedName) .. " appears to be offline or does not exist.")
+  Message(U.WrapColor(COLOR_FAILED, failedName) .. " appears to be offline or does not exist.")
   PublicOrderWhisper.EventBus:Fire(PublicOrderWhisper.Events.WhisperFailed, failedName, message)
 
   ForEachButtonOf(failedName, function(btn)
@@ -883,7 +875,6 @@ Whisper._test = {
   end,
   SendWhisperForOrder = SendWhisperForOrder,
   SetupRowWhisperButton = SetupRowWhisperButton,
-  ResolveRowOrder = ResolveRowOrder,
   OnRowButtonClick = OnRowButtonClick,
   BuildRowTooltip = BuildRowTooltip,
   NewSuppressionFilter = NewSuppressionFilter,

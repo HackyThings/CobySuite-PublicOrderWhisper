@@ -1,16 +1,16 @@
-# Public Order Whisper
+# Coby's Public Order Whisper
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/HackyThings/CobySuite-PublicOrderWhisper/main/.publish-meta/icon/public-order-whisper-224.jpg" width="160" alt="Public Order Whisper">
+  <img src="https://raw.githubusercontent.com/HackyThings/CobySuite-PublicOrderWhisper/main/.publish-meta/icon/public-order-whisper-224.jpg" width="160" alt="Coby's Public Order Whisper">
 </p>
 
 A whisper button on public crafting orders in WoW Midnight (12.1).
 
-You are at your profession table, the Public tab of the crafting orders list is open, and there is an order you could fill right now if only it were a personal order with a proper tip. Public Order Whisper puts a chat bubble after every customer's name. Click it and that player gets your message, with the item they asked for linked in, so you can offer to craft it for them directly.
+You are at your profession table, the Public tab of the crafting orders list is open, and there is an order you could fill right now if only it were a personal order with a proper tip. Coby's Public Order Whisper puts a chat bubble after every customer's name. Click it and that player gets your message, with the item they asked for linked in, so you can offer to craft it for them directly.
 
 ## The Problem
 
-Public orders are anonymous by design: you cannot reply to one, and reaching the customer means reading the name, typing a whisper, finding the item to link, and doing it again for the next order. Most crafters do not bother. Public Order Whisper turns all of that into one click with a message you write once.
+Public orders are anonymous by design: you cannot reply to one, and reaching the customer means reading the name, typing a whisper, finding the item to link, and doing it again for the next order. Most crafters do not bother. Coby's Public Order Whisper turns all of that into one click with a message you write once.
 
 ## How It Works
 
@@ -40,19 +40,27 @@ WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented l
 ## Slash Commands
 
 ```
-/pow settings          Open the settings window
+/pow settings          Open the settings window (also /pow config, /pow options)
+/pow guide             Open or close the feature guide
+/pow changelog         What changed in each version
 /pow message <text>    Set the whisper message ({item}, {name}, {tip})
 /pow message           Show the current message
 /pow cooldown <sec>    Per-player cooldown in seconds, 0 to 120 (0 turns it off)
 /pow cooldown          Show the current cooldown
 /pow selftest          Whisper the current message to yourself
 /pow reset             Restore every setting to its default
-/pow debug             Toggle the debug log window
+/pow debug             Open or close the debug log window
 /pow version           Print the addon version
 /pow help              Command list
 ```
 
-`/publicorderwhisper` works the same as `/pow`.
+`/publicorderwhisper` works the same as `/pow`. `/pow` on its own opens the settings window, and `/pow help` prints the command list.
+
+## Guide and What's New
+
+`/pow guide`, or the **Guide** button in the settings window, opens a short guide: your first whisper, the message and its placeholders, what the colors and the cooldown mean, and the settings. It opens by itself the first time you log in with the addon.
+
+`/pow changelog` lists what changed in each version. After an update it opens by itself with every version since the one you last played.
 
 ## Settings
 
@@ -90,7 +98,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 
 **I see "attempt to perform arithmetic on a secret number value" errors from MoneyFrame with another crafting-order addon installed.**
 
-- That error comes from the other addon rebuilding Blizzard's order table. Public Order Whisper drops that one error when it comes from the crafting orders list, so it does not spam you. The same error from anywhere else, and every other error, still reaches your error display, and the first one dropped is written to `/pow debug` with its details; the log notes the total again at 10, 100 and 1000. If an error addon such as BugSack handles your errors, it takes over and keeps showing them.
+- That error comes from the other addon rebuilding Blizzard's order table. Coby's Public Order Whisper drops that one error when it comes from the crafting orders list, so it does not spam you. The same error from anywhere else, and every other error, still reaches your error display, and the first one dropped is written to `/pow debug` with its details; the log notes the total again at 10, 100 and 1000. If an error addon such as BugSack handles your errors, it takes over and keeps showing them.
 
 ## License
 

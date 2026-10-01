@@ -4,6 +4,6 @@
 
 PublicOrderWhisper.DebugWindow = CobySuite_PublicOrderWhisper.Debug.NewWindow({
   windowName = "PublicOrderWhisperDebugWindow",
-  title = "Public Order Whisper Debug Log",
+  title = "Coby's Public Order Whisper Debug Log",
   logger = PublicOrderWhisper.Debug,
 })

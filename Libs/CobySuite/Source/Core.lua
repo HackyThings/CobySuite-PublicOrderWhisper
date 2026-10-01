@@ -24,8 +24,9 @@ CobySuite_PublicOrderWhisper.BuildInfo = CobySuite_PublicOrderWhisper.BuildInfo 
 
 -- The library version for reports: "embedded in <host> at <commit>" in a
 -- standalone build, else the CobySuite addon's TOC version. The addon name
--- below is the only string literal in shared code that is exactly the
--- library's name (the standalone build checks this).
+-- below is the only string literal in shipped shared code that is exactly
+-- the library's name (the standalone build checks this; Source/Tests/ is
+-- stripped).
 function CobySuite_PublicOrderWhisper.LibraryVersionText()
   local info = CobySuite_PublicOrderWhisper.BuildInfo
   if info and info.embedded then
