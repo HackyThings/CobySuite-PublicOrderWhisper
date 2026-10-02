@@ -16,6 +16,26 @@ PublicOrderWhisper.Data = PublicOrderWhisper.Data or {}
 
 PublicOrderWhisper.Data.Changelog = {
   {
+    version = "1.0.4",
+    title = "Ready-made messages",
+    date = "2026-10-01",
+    new = {
+      "Ready-made messages: pick one under Message, then make it yours",
+      "Chips: buttons that put item, name or tip into your message",
+    },
+    changed = {
+      "Settings: redesigned, with Message, Bubbles and Sending pages",
+      "Message: shows your whisper as the customer reads it, sized in bytes",
+      "Send test to myself: uses the text in the box before you apply it",
+      "Tip: an order with no tip now reads 0g",
+    },
+    fixed = {
+      "Bubbles: with no message set, the tooltip no longer says Click to send",
+      "Orders whose item link is empty now say your item",
+      "Minimap addon list: tooltip matches the other Coby addons",
+    },
+  },
+  {
     version = "1.0.3",
     title = "A new name and a guide",
     date = "2026-10-01",

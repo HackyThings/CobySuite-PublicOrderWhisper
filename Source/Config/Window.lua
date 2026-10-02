@@ -2,14 +2,18 @@
 -- PublicOrderWhisper Settings Window
 --
 -- The suite's standard settings window (CobySuite.UI.CreateSettingsWindow):
--- a sidebar with Message, Buttons and Sending, staged edits that Apply
+-- a sidebar with Message, Bubbles and Sending, staged edits that Apply
 -- writes through Config.Set, Cancel, Defaults (with its own confirm popup)
--- and a Guide button that opens the feature guide (UI/Guide.lua). The message preview and the test whisper follow the staged text,
--- so they show what Apply would save. Built at load, so opening it never
--- creates frames in combat; the controls are painted from config on every
--- show, and a ConfigChanged event (/pow message, /pow cooldown, /pow reset)
--- repaints an open window. The addon is also listed under Options > AddOns
--- with a button that opens this window (CobySuite.UI.RegisterSettingsCategory).
+-- and a Guide button that opens the feature guide (UI/Guide.lua).
+--
+-- The Message page reads the box's draft, not the staged value: the
+-- examples, the byte meter and the test whisper follow what the box shows,
+-- and an emptied box (which stages nothing) says so and sends no test.
+-- Built at load, so opening it never creates frames in combat; the controls
+-- are painted from config on every show, and a ConfigChanged event
+-- (/pow message, /pow cooldown, /pow reset) repaints an open window. The
+-- addon is also listed under Options > AddOns with a button that opens this
+-- window (CobySuite.UI.RegisterSettingsCategory).
 -------------------------------------------------------------------------------
 
 local Config = PublicOrderWhisper.Config
@@ -17,136 +21,283 @@ local Opt = Config.Options
 local U = CobySuite_PublicOrderWhisper.Utilities
 local UI = CobySuite_PublicOrderWhisper.UI
 
-local WINDOW_W = 640
-local WINDOW_H = 440
 local MESSAGE_BOX_HEIGHT = 64        -- three wrapped lines of the message at the larger font
 local MESSAGE_FONT_SCALE = 1.1
-local LEGEND_ROW = 34                -- the placeholder legend under the message box, up to two lines
-local PREVIEW_HEIGHT = 72            -- five wrapped lines: a 255-byte message plus a link fits
-local PREVIEW_ROW = 80
+local SKETCH_HEIGHT = 22             -- the little order row and order header on the Bubbles tiles
+local TILE_HEIGHT = 92
+
+local ICONS = "Interface\\Icons\\"
+local BUBBLE = "Interface\\ChatFrame\\UI-ChatIcon-Chat-Up"
+-- The name the examples greet: a customer's whisper, not one to yourself
+local SAMPLE_CUSTOMER = "Customer"
+
+-- Ready-made messages for the Start from list, in the order shown. The first
+-- is the default message.
+local STARTERS = {
+  { label = "Friendly (the default)", text = Config.Defaults[Opt.WHISPER_MESSAGE] },
+  { label = "Short and direct",       text = "I can make {item} for you. Send it to me as a personal order." },
+  { label = "Greets them by name",    text = "Hi {name}! I can craft {item} for you, just send me a personal order." },
+}
 
 -------------------------------------------------------------------------------
--- Preview: the template with sample values, as the customer would read it
+-- The message box's draft and the examples built from it
 -------------------------------------------------------------------------------
-local function PreviewText(template)
-  template = template or ""
-  if strtrim(template) == "" then
-    return U.WrapColor(U.Colors.WARNING_RED, "No message set; the whisper buttons will do nothing.")
-  end
-  local Whisper = PublicOrderWhisper.Whisper
-  local values = Whisper.SampleValues and Whisper.SampleValues() or {}
-  local text = U.ExpandPlaceholders(template, values)
-  local length = #text   -- bytes, the unit of WoW's limit
-  local suffix = ""
-  if length > Config.MAX_MESSAGE_LENGTH then
-    suffix = U.WrapColor(U.Colors.WARNING_RED, (" (%d bytes and WoW allows %d; accented letters count as two)"):format(length, Config.MAX_MESSAGE_LENGTH))
-  end
-  return U.WrapColor(U.Colors.LABEL_GRAY, "Preview: ") .. text .. suffix
+local window   -- the settings window, made below
+local rows = {}  -- rows the suites and the screenshot catalog reach
+
+-- The box's text as staging folds it (newlines to spaces, trimmed); "" when
+-- empty or before the box exists
+local function Draft()
+  return rows.message and rows.message.GetDraft() or ""
 end
 
-local function BuildMessage(panel, window)
-  local layout = panel.layout
-  local textWidth = layout.inputX(0) - layout.pad
+-- The draft filled in for an order from SAMPLE_CUSTOMER with tipCopper (nil:
+-- the sample 150g)
+local function SampleMessage(tipCopper)
+  local Whisper = PublicOrderWhisper.Whisper
+  local values = Whisper.SampleValues and Whisper.SampleValues(SAMPLE_CUSTOMER, tipCopper) or {}
+  return U.ExpandPlaceholders(Draft(), values)
+end
 
-  panel:Section("Message")
+-- The line the customer reads, as their chat shows a whisper from you
+local function WhisperLine(message)
+  local from = "[" .. (UnitName("player") or "You") .. "]"
+  local prefix = CHAT_WHISPER_GET and CHAT_WHISPER_GET:format(from) or (from .. " whispers: ")
+  return prefix .. message
+end
 
-  -- The limit and the counter are in bytes, WoW's unit for a whisper, so
-  -- the box and the send check agree on text with accented letters
-  local messageRow = panel:MultiLine{
+local function WhisperColor()
+  local info = ChatTypeInfo and ChatTypeInfo.WHISPER
+  if info and info.r then return { info.r, info.g, info.b } end
+  return { 1, 0.5, 1 }
+end
+
+local function HasDraft() return Draft() ~= "" end
+-- Placeholders match in any case ({TIP} is filled in too), as the expander does
+local function UsesTip() return Draft():lower():find("{tip}", 1, true) ~= nil end
+
+-- A ready-made message into the box, staged (Cancel puts the saved one back)
+local function UseStarter(text)
+  window.MessageBox:SetCommittedValue(text)
+  window:Stage(Opt.WHISPER_MESSAGE, text)
+end
+
+-------------------------------------------------------------------------------
+-- Message
+-------------------------------------------------------------------------------
+local function BuildMessage(panel, w)
+  panel:Section("Your whisper", { icon = ICONS .. "INV_Misc_Note_01" })
+
+  -- The limit and the counter are in bytes, WoW's unit for a whisper
+  rows.message = panel:MultiLine{
     key         = Opt.WHISPER_MESSAGE,
-    tooltip     = "What the whisper says. Press Apply to save it. {item}, {name} and {tip} are filled in per order. The counter shows bytes: accented letters count as two.",
+    tooltip     = "What the customer reads. Press Apply to save it.",
+    description = "The counter is in bytes. Some characters use more than one byte.",
     height      = MESSAGE_BOX_HEIGHT,
     fontScale   = MESSAGE_FONT_SCALE,
     maxBytes    = Config.MAX_MESSAGE_LENGTH,
-    placeholder = "Type the whisper",
+    placeholder = "Write your whisper here",
     validate    = function(text) return text ~= "" end,
+    tokens = {
+      { text = "{item}", label = "{item} Item link",
+        tooltip = "The crafted item as a link, at the quality the order asks for when the game knows it." },
+      { text = "{name}", label = "{name} Their name",
+        tooltip = "The customer's name, without the realm when they're on yours." },
+      { text = "{tip}", label = "{tip} Tip",
+        tooltip = "The tip on the order, in gold and silver. An order with no tip reads 0g." },
+    },
   }
-  window.MessageBox = messageRow.Box   -- for the WhisperSuite
+  w.MessageBox = rows.message.Box   -- for the WhisperSuite
 
-  panel:Custom{
-    height = LEGEND_ROW,
-    build = function(row)
-      local legend = row:CreateFontString(nil, "OVERLAY", U.Fonts.DATA)
-      legend:SetPoint("TOPLEFT", row, "TOPLEFT", layout.pad, -2)
-      legend:SetWidth(textWidth)
-      legend:SetJustifyH("LEFT")
-      legend:SetWordWrap(true)
-      legend:SetText("{item} = crafted item link, {name} = customer's name, {tip} = the tip on the order")
-      local c = U.Colors.LABEL_GRAY
-      legend:SetTextColor(c[1], c[2], c[3])
-    end,
-  }
-
-  panel:Custom{
-    height = PREVIEW_ROW,
-    build = function(row)
-      local preview = row:CreateFontString(nil, "OVERLAY", U.Fonts.BODY)
-      preview:SetPoint("TOPLEFT", row, "TOPLEFT", layout.pad, -2)
-      preview:SetWidth(textWidth)
-      preview:SetHeight(PREVIEW_HEIGHT)
-      preview:SetJustifyH("LEFT")
-      preview:SetJustifyV("TOP")
-      preview:SetWordWrap(true)
-      row.Preview = preview
-    end,
-    refresh = function(row, w)
-      row.Preview:SetText(PreviewText(w:Get(Opt.WHISPER_MESSAGE)))
-    end,
+  rows.emptyNote = panel:Note{
+    text = "Enter a message to apply. Until then your saved one stays.",
+    color = U.Colors.WARNING_RED,
+    visibleWhen = function() return not HasDraft() end,
   }
 
-  panel:Button{
-    text    = "Send a test whisper to yourself",
-    width   = 220,
-    tooltip = "Whispers you the message with an example item, your own name and a 150g tip, so you can see how it reads.",
-    onClick = function(w)
-      if PublicOrderWhisper.Whisper.SendTest then
-        PublicOrderWhisper.Whisper.SendTest(w:Get(Opt.WHISPER_MESSAGE))
+  rows.example = panel:Preview{
+    caption = "Example",
+    text = function() return WhisperLine(SampleMessage()) end,
+    color = WhisperColor,
+    visibleWhen = HasDraft,
+  }
+  rows.noTipExample = panel:Preview{
+    caption = "Example of an order with no tip",
+    text = function() return WhisperLine(SampleMessage(0)) end,
+    color = WhisperColor,
+    visibleWhen = function() return HasDraft() and UsesTip() end,
+  }
+
+  rows.meter = panel:Meter{
+    label = "Length",
+    value = function() return #SampleMessage() end,
+    max = Config.MAX_MESSAGE_LENGTH,
+    warnAt = 0.8,
+    format = function(used, max)
+      local text = ("Sample message: %d / %d bytes"):format(used, max)
+      if used > max then return U.WrapColor(U.Colors.WARNING_RED, text) end
+      return text
+    end,
+    description = "Actual length varies by order. A whisper that runs over is not sent, and chat says so.",
+    visibleWhen = HasDraft,
+  }
+
+  rows.testButton = panel:Button{
+    text = "Send test to myself",
+    width = 180,
+    icon = BUBBLE,
+    tooltip = "Whispers you the message in the box, with a sample item and a 150g tip, even before you press Apply.",
+    enabledWhen = function() return HasDraft() end,
+    onClick = function()
+      local draft = Draft()
+      if draft ~= "" and PublicOrderWhisper.Whisper.SendTest then
+        PublicOrderWhisper.Whisper.SendTest(draft)
       end
     end,
   }
+
+  panel:Section("Ready-made messages", { icon = ICONS .. "INV_Misc_Book_09" })
+  rows.starter = panel:DropdownAction{
+    label = "Start from",
+    options = function()
+      local labels, values = {}, {}
+      for i, starter in ipairs(STARTERS) do
+        labels[i], values[i] = starter.label, starter.text
+      end
+      return labels, values
+    end,
+    buttonText = "Use this message",
+    buttonTooltip = "Puts this message in the box. Nothing is saved until you press Apply.",
+    onClick = function(text) UseStarter(text) end,
+    description = "Pick one, then make it yours.",
+  }
 end
 
-local function BuildButtons(panel)
-  panel:Section("Buttons")
-  panel:Checkbox{
-    key = Opt.SHOW_LIST_BUTTONS, label = "Whisper icon in the order list (Public tab)",
-    tooltip = "The chat bubble after the customer's name in the Public tab of the crafting orders list.",
+-------------------------------------------------------------------------------
+-- Bubbles
+-------------------------------------------------------------------------------
+-- A tile's sketch: a strip with gray words and the bubble where the addon
+-- puts it. Regions only, since a tile's first paint may come in combat.
+local function Sketch(frame, parts)
+  local bg = frame:CreateTexture(nil, "BACKGROUND")
+  bg:SetAllPoints()
+  local c = U.Colors.CONTENT_BG
+  bg:SetColorTexture(c[1], c[2], c[3], 0.6)
+  local x = 6
+  for _, part in ipairs(parts) do
+    if part == "bubble" then
+      local bubble = frame:CreateTexture(nil, "ARTWORK")
+      bubble:SetSize(14, 14)
+      bubble:SetPoint("LEFT", frame, "LEFT", x, 0)
+      bubble:SetTexture(BUBBLE)
+      frame.Bubble = bubble
+      x = x + 14 + 8
+    else
+      local text = frame:CreateFontString(nil, "OVERLAY", U.Fonts.DATA)
+      text:SetPoint("LEFT", frame, "LEFT", x, 0)
+      text:SetText(part.text)
+      local color = part.color or U.Colors.LABEL_GRAY
+      text:SetTextColor(color[1], color[2], color[3])
+      x = x + math.ceil(text:GetStringWidth()) + (part.gap or 6)
+    end
+  end
+end
+
+-- An unchecked tile's bubble is gray, as if it were not there
+local function PaintSketch(frame, on)
+  if frame.Bubble then frame.Bubble:SetDesaturated(not on) end
+  frame:SetAlpha(on and 1 or 0.5)
+end
+
+local function BuildBubbles(panel)
+  panel:Section("Where the bubble shows", { icon = PublicOrderWhisper.ICON })
+  rows.tiles = panel:ToggleTiles{
+    height = TILE_HEIGHT,
+    options = {
+      {
+        key = Opt.SHOW_LIST_BUTTONS,
+        title = "In the order list",
+        description = "After the customer's name on each public order.",
+        tooltip = "The bubble on every row of the Public tab.",
+        previewHeight = SKETCH_HEIGHT,
+        preview = function(frame)
+          Sketch(frame, { { text = "Crafted item", gap = 14 }, { text = "Customer", color = U.Colors.HIGHLIGHT_WHITE }, "bubble" })
+        end,
+        previewPaint = PaintSketch,
+      },
+      {
+        key = Opt.SHOW_DETAIL_BUTTON,
+        title = "On an open order",
+        description = "Beside the customer's name when you open an order.",
+        tooltip = "The bubble on the page that opens when you click a public order.",
+        previewHeight = SKETCH_HEIGHT,
+        preview = function(frame)
+          Sketch(frame, { { text = "Customer:", color = U.Colors.STATUS_GOLD }, { text = "Name", color = U.Colors.HIGHLIGHT_WHITE }, "bubble" })
+        end,
+        previewPaint = PaintSketch,
+      },
+    },
   }
-  panel:Checkbox{
-    key = Opt.SHOW_DETAIL_BUTTON, label = "Whisper icon on the order details page",
-    tooltip = "The chat bubble next to the customer's name on the page that opens when you click a public order.",
+  panel:Note{
+    text = "Both bubbles are off, so there is nothing to click. Send test to myself still works.",
+    color = U.Colors.CAUTION_ORANGE,
+    visibleWhen = function(get) return not get(Opt.SHOW_LIST_BUTTONS) and not get(Opt.SHOW_DETAIL_BUTTON) end,
   }
-  panel:Checkbox{
-    key = Opt.MARK_WHISPERED, label = "Turn the icon green for players whispered this session",
-    tooltip = "A green chat bubble means you already whispered that player since logging in. Off: the icon never changes colour.",
+  panel:Note{
+    text = "Your own orders never get a bubble, and personal or guild orders don't either.",
   }
 end
 
+-------------------------------------------------------------------------------
+-- Sending
+-------------------------------------------------------------------------------
 local function BuildSending(panel)
-  panel:Section("Sending")
-  panel:Checkbox{
-    key = Opt.OPEN_IN_CHAT, label = "Put the whisper in my chat box instead of sending it",
-    tooltip = "Clicking an icon fills your chat box with the whisper, ready to edit. Press Enter to send it. While this is on, clicks do not turn the icon green, start the cooldown or flash red for an offline player. Off: the whisper is sent right away.",
+  panel:Section("When you click a bubble", { icon = BUBBLE })
+  panel:Radio{
+    key = Opt.OPEN_IN_CHAT,
+    options = {
+      { value = false, label = "Send it right away",
+        description = "The customer gets your whisper the moment you click." },
+      { value = true, label = "Put it in my chat box first",
+        description = "Your chat box opens with the whisper, ready to change. Press Enter to send it." },
+    },
   }
   panel:Checkbox{
-    key = Opt.CHAT_FEEDBACK, label = "Print a chat line for each whisper sent",
-    tooltip = "A short confirmation in your chat window after each whisper. Errors and failed whispers are always printed.",
+    key = Opt.CHAT_FEEDBACK, label = "Confirm each whisper in chat",
+    description = "A short line after each whisper, or when one is waiting in your chat box. Problems always print.",
   }
-  panel:Slider{
-    key = Opt.WHISPER_COOLDOWN, label = "Cooldown per player",
-    tooltip = "How long after whispering someone the icon refuses to whisper them again. Off sends every click.",
+
+  panel:Section("Keeping track", { icon = ICONS .. "INV_Misc_PocketWatch_01" })
+  panel:Legend{
+    items = {
+      { icon = BUBBLE, color = U.Colors.HIGHLIGHT_WHITE, label = "Ready" },
+      { icon = BUBBLE, color = U.Colors.SUCCESS_GREEN, label = "Whispered this session" },
+      { icon = BUBBLE, color = U.Colors.WARNING_RED, label = "Offline or not found" },
+    },
+  }
+  panel:Checkbox{
+    key = Opt.MARK_WHISPERED, label = "Turn the bubble green after a whisper",
+    description = "Green clears when you log out or reload. A failed whisper still flashes red when this is off.",
+  }
+  rows.cooldown = panel:Slider{
+    key = Opt.WHISPER_COOLDOWN, label = "Wait before whispering the same player again",
+    tooltip = "Stops a double click from whispering someone twice. Off lets every click through.",
     min = 0, max = Config.MAX_COOLDOWN, step = 1,
+    minLabel = "Off", maxLabel = "2 min",
     format = function(v) if v <= 0 then return "Off" end return ("%d s"):format(v) end,
   }
+  panel:Note{
+    text = "Composing creates no new green marks or cooldowns. Marks and cooldowns from earlier whispers stay.",
+    visibleWhen = function(get) return get(Opt.OPEN_IN_CHAT) and true or false end,
+  }
 end
 
-local window = UI.CreateSettingsWindow({
+window = UI.CreateSettingsWindow({
   name    = "PublicOrderWhisperOptionsWindow",
   title   = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. " Settings",
   icon    = PublicOrderWhisper.ICON,
   config  = Config,
-  width   = WINDOW_W,
-  height  = WINDOW_H,
+  size    = "compact",
   persist = {
     svTable = function() return PUBLIC_ORDER_WHISPER_WINDOW_STATE end,
     key = "options",
@@ -162,10 +313,13 @@ local window = UI.CreateSettingsWindow({
   },
   categories = {
     { key = "message", label = "Message", build = BuildMessage },
-    { key = "buttons", label = "Buttons", build = BuildButtons },
+    { key = "buttons", label = "Bubbles", build = BuildBubbles },
     { key = "sending", label = "Sending", build = BuildSending },
   },
 })
+
+-- The page's pieces, for the suites
+Config._window = { window = window, rows = rows, Draft = Draft, UseStarter = UseStarter, STARTERS = STARTERS }
 
 -------------------------------------------------------------------------------
 -- Public API
@@ -187,8 +341,8 @@ EventUtil.ContinueOnAddOnLoaded("PublicOrderWhisper", function()
     brandColor  = PublicOrderWhisper.BRAND_COLOR,
     version     = PublicOrderWhisper.VERSION,
     description = {
-      "Adds a chat bubble to every public crafting order at a profession table. Click it to whisper the player who placed the order your message, with the item link filled in.",
-      "The message, the whisper icons, the cooldown and the send behaviour live in the addon's own settings window.",
+      "Adds a whisper button to public crafting orders that sends your message, with the item link, to the player who placed the order.",
+      "The settings live in the addon's own settings window.",
     },
     slash       = "/pow settings",
     onOpen      = Config.OpenSettings,

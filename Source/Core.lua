@@ -42,7 +42,7 @@ local function Message(text)
 end
 
 local function White(text)
-  return CobySuite_PublicOrderWhisper.Utilities.WrapColor("FFFFFF", text)
+  return CobySuite_PublicOrderWhisper.Utilities.WrapColor(CobySuite_PublicOrderWhisper.Utilities.Colors.HIGHLIGHT_WHITE, text)
 end
 
 -- The settings window: /pow settings (and show), and the compartment below
@@ -93,7 +93,7 @@ PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
             Message("{item} = crafted item link, {name} = customer's name, {tip} = tip offered.")
           elseif #rest > Config.MAX_MESSAGE_LENGTH then
             -- The limit is in bytes, the unit # measures
-            Message(("That message is %d bytes and the limit is %d (accented letters count as two)."):format(#rest, Config.MAX_MESSAGE_LENGTH))
+            Message(("That message is %d bytes and the limit is %d (some characters use more than one byte)."):format(#rest, Config.MAX_MESSAGE_LENGTH))
           else
             Config.Set(Config.Options.WHISPER_MESSAGE, rest)
             Message("Message updated: " .. White(rest))
@@ -153,19 +153,18 @@ local launcher = CobySuite_PublicOrderWhisper.UI.CreateLauncher({
   onLeftClick = ToggleSettings,
   onRightClick = ToggleSettings,
   compartmentTooltipAnchor = "ANCHOR_LEFT",
-  tooltip = {
-    brandColor = PublicOrderWhisper.BRAND_COLOR,
+  -- The suite's one launcher tooltip shape; no main window, so either
+  -- click opens the settings and the key reads "Click"
+  tooltip = CobySuite_PublicOrderWhisper.UI.LauncherTooltip({
     title = "Coby's Public Order Whisper",
-    subtitle = "v" .. VERSION,
-    body = {
-      "Whisper the players behind public crafting orders from the order list.",
-    },
-    keys = {
-      { key = "Click", desc = "Settings" },
-      { key = "/pow", desc = "Commands" },
-    },
-  },
+    brandColor = PublicOrderWhisper.BRAND_COLOR,
+    icon = PublicOrderWhisper.ICON,
+    leftClick = "Open settings",
+  }),
 })
+
+-- The launcher's tooltip, for the in-game screenshot catalog (Source/Tests)
+PublicOrderWhisper.Launcher = launcher
 
 function PublicOrderWhisper_OnAddonCompartmentClick(_, button)
   launcher:OnCompartmentClick(button)

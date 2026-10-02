@@ -159,14 +159,27 @@ local function FindPlayerNameRegion(row, customerName)
 end
 
 -------------------------------------------------------------------------------
--- Placeholder values for the settings preview and the test whisper
+-- {tip}: the order's tip as money text, "0g" for an order with none (the
+-- shared formatter's "0c" reads like a tiny tip)
 -------------------------------------------------------------------------------
-function Whisper.SampleValues()
+local function FormatTip(copper)
+  copper = tonumber(copper) or 0
+  if copper <= 0 then return "0g" end
+  return U.FormatMoneyText(copper)
+end
+Whisper.FormatTip = FormatTip
+
+-------------------------------------------------------------------------------
+-- Placeholder values for the settings examples and the test whisper. name and
+-- tipCopper replace the defaults (the player's own name, a 150g tip), so the
+-- settings can show a customer's whisper and an order with no tip.
+-------------------------------------------------------------------------------
+function Whisper.SampleValues(name, tipCopper)
   local _, link = C_Item.GetItemInfo(SAMPLE_ITEM_ID)
   return {
     item = link or SAMPLE_ITEM_TEXT,
-    name = UnitName("player"),
-    tip  = U.FormatMoneyText(SAMPLE_TIP_COPPER),
+    name = name or UnitName("player"),
+    tip  = FormatTip(tipCopper or SAMPLE_TIP_COPPER),
   }
 end
 
@@ -236,7 +249,9 @@ local function ResolveItemLink(order)
     tostring(order.itemID), tostring(order.spellID), tostring(order.minQuality),
     tostring(order.isRecraft))
 
-  return itemDisplay or "your item"
+  -- An empty link from every source still reads as words, never as a gap
+  if not itemDisplay or itemDisplay == "" then return "your item" end
+  return itemDisplay
 end
 
 -------------------------------------------------------------------------------
@@ -250,7 +265,7 @@ local function BuildMessage(order)
   return U.ExpandPlaceholders(template, {
     item = ResolveItemLink(order),
     name = Ambiguate(order.customerName, "short"),
-    tip  = U.FormatMoneyText(order.tipAmount),
+    tip  = FormatTip(order.tipAmount),
   })
 end
 
@@ -280,10 +295,19 @@ local function TrackSent(customerName)
 end
 
 -- The refusal for a message over WoW's limit. The limit is in bytes, the
--- unit Lua's # measures: an accented letter takes two.
+-- unit Lua's # measures: a character takes one to four.
 local function TooLongText(what, bytes)
-  return ("%s: with the item link it is %d bytes and WoW allows %d (accented letters count as two)."):format(
+  return ("%s: with the item link it is %d bytes and WoW allows %d (some characters use more than one byte)."):format(
     what, bytes, Config.MAX_MESSAGE_LENGTH)
+end
+
+-- The last click's outcome on an order, for the development checks to read
+-- back after a hand test (session only, never saved): outcome is cooldown,
+-- no-message, too-long, composed or sent; line is the refusal printed to chat.
+local lastAttempt
+local function NoteAttempt(customerName, outcome, bytes, line)
+  lastAttempt = { at = time(), customer = customerName, outcome = outcome, bytes = bytes, line = line,
+    sent = outcome == "sent" }
 end
 
 -------------------------------------------------------------------------------
@@ -307,17 +331,21 @@ local function SendWhisperForOrder(order)
   if cooldown > 0 and lastTime and (now - lastTime) < cooldown then
     local remaining = math.ceil(cooldown - (now - lastTime))
     Message(("Cooldown: wait %ds before whispering %s again."):format(remaining, customerName))
+    NoteAttempt(customerName, "cooldown")
     return
   end
 
   local message = BuildMessage(order)
   if not message then
     Message("No message configured. Set one in /pow settings.")
+    NoteAttempt(customerName, "no-message")
     return
   end
 
   if #message > Config.MAX_MESSAGE_LENGTH then
-    Message(TooLongText("Whisper not sent", #message) .. " Shorten the message in /pow settings.")
+    local line = TooLongText("Whisper not sent", #message) .. " Shorten the message in /pow settings."
+    Message(line)
+    NoteAttempt(customerName, "too-long", #message, line)
     Debug.Warn("WHISPER", "Message too long for %s (%d bytes)", customerName, #message)
     return
   end
@@ -326,10 +354,12 @@ local function SendWhisperForOrder(order)
     CobySuite_PublicOrderWhisper.Chat.ComposeWhisper(customerName, message)
     Debug.Log("WHISPER", "Opened in chat box for %s: %s", customerName, message)
     Notify("Whisper to " .. customerName .. " is in your chat box. Press Enter to send it.")
+    NoteAttempt(customerName, "composed", #message)
     return
   end
 
   seams.Send(message, customerName)
+  NoteAttempt(customerName, "sent", #message)
   Debug.Log("WHISPER", "Sent to %s: %s", customerName, message)
   Notify("Whispered " .. customerName .. ".")
   TrackSent(customerName)
@@ -364,22 +394,30 @@ local function AddTooltipLine(tooltip, text, color, wrap)
   tooltip:AddLine(text, color[1], color[2], color[3], wrap)
 end
 
-local function BuildWhisperTooltip(tooltip, customerName)
+-- Writes only to the tooltip it is handed. state (the test catalogs only)
+-- stands in for the settings and the tracking: { message, openInChat,
+-- whispered }, each field optional.
+local function BuildWhisperTooltip(tooltip, customerName, state)
   local C = U.Colors
   tooltip:SetText("Whisper " .. (customerName and Ambiguate(customerName, "short") or ""), unpack(C.HIGHLIGHT_WHITE))
   local template = Config.Get(Config.Options.WHISPER_MESSAGE)
-  if template and strtrim(template) ~= "" then
+  if state and state.message ~= nil then template = state.message end
+  local hasMessage = template and strtrim(template) ~= ""
+  if hasMessage then
     AddTooltipLine(tooltip, template, C.LIGHT_GRAY, true)
   else
     AddTooltipLine(tooltip, "No message set. Open /pow settings.", C.WARNING_RED, true)
   end
-  tooltip:AddLine(" ")
-  if Config.Get(Config.Options.OPEN_IN_CHAT) then
-    AddTooltipLine(tooltip, "Click to put the whisper in your chat box.", C.INFO_BLUE)
-  else
-    AddTooltipLine(tooltip, "Click to send.", C.INFO_BLUE)
+  local openInChat = Config.Get(Config.Options.OPEN_IN_CHAT)
+  if state and state.openInChat ~= nil then openInChat = state.openInChat end
+  local whispered = customerName and whisperedPlayers[customerName]
+  if state and state.whispered ~= nil then whispered = state.whispered end
+  -- With no message a click only says so in chat, so no click line
+  if hasMessage or whispered then tooltip:AddLine(" ") end
+  if hasMessage then
+    AddTooltipLine(tooltip, openInChat and "Click to put the whisper in your chat box." or "Click to send.", C.INFO_BLUE)
   end
-  if customerName and whisperedPlayers[customerName] then
+  if whispered then
     AddTooltipLine(tooltip, "Already whispered this session.", C.SUCCESS_GREEN)
   end
 end
@@ -555,9 +593,10 @@ local function CreateOrderViewButton(orderInfo)
   end
 
   btn:SetScript("OnClick", OnOrderViewClick)
+  -- fillable: the builder writes only to the tooltip it is handed
   UI.AddDynamicTooltip(btn, function(tooltip)
     BuildWhisperTooltip(tooltip, currentOrder and currentOrder.customerName)
-  end)
+  end, { fillable = true })
   btn:Hide()
 
   orderViewButton = btn
@@ -695,7 +734,11 @@ local function SetupHooks()
   end
 end
 
-EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", SetupHooks)
+-- Not before login: another addon can load Blizzard_Professions ahead of this
+-- one, and the hooks read settings that exist only once ours have loaded
+EventUtil.RegisterOnceFrameEventAndCallback("PLAYER_LOGIN", function()
+  EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", SetupHooks)
+end)
 
 -- Warm the item cache for the settings preview and the test whisper.
 C_Item.RequestLoadItemDataByID(SAMPLE_ITEM_ID)
@@ -729,8 +772,8 @@ local function HandleSystemMessage(message)
   -- A secret string cannot be matched or used as a table key
   if U.IsSecret(message) then return end
 
-  -- string.match rather than message:match: system responses to our own
-  -- whispers can be secret strings that forbid __index access.
+  -- string.match rather than message:match: no method lookup on the
+  -- message, kept as a second guard behind the one above
   local failedName = string.match(message, FAILURE_PATTERN)
   if not failedName then return end
 
@@ -874,6 +917,8 @@ Whisper._test = {
     lastWhisperTime[name] = nil
   end,
   SendWhisperForOrder = SendWhisperForOrder,
+  -- A copy of the last click's outcome on an order, or nil
+  LastAttempt = function() return lastAttempt and CopyTable(lastAttempt) end,
   SetupRowWhisperButton = SetupRowWhisperButton,
   OnRowButtonClick = OnRowButtonClick,
   BuildRowTooltip = BuildRowTooltip,
@@ -882,4 +927,39 @@ Whisper._test = {
   ReportHandlerState = ReportHandlerState,
   GetSuppressedCount = function() return moneyFilter.count end,
   IsFilterActive = function() return handlerState.active == true end,
+
+  -- For the in-game screenshot catalog (Source/Tests): reads and addon-owned
+  -- frames only, nothing here sends or touches a Blizzard frame
+  COLORS = { default = COLOR_DEFAULT, whispered = COLOR_WHISPERED, failed = COLOR_FAILED },
+  CreateChatBubbleButton = CreateChatBubbleButton,
+  TintChatBubble = TintChatBubble,
+  FillBubbleTooltip = BuildWhisperTooltip,
+  GetDetailButton = function() return orderViewButton end,
+  GetSettingsButton = function() return settingsButton end,
+  GetBrowseFrame = function() return browseFrame end,
+  GetCurrentOrder = function() return currentOrder end,
+  OrderFromElementData = GetOrderFromElementData,
+  -- The order a row bubble stands for now, read only (no hide, no re-lay)
+  RowOrder = function(btn)
+    local row = btn:GetParent()
+    local order = GetOrderFromElementData(row and row.GetElementData and row:GetElementData())
+    if CanWhisper(order) then return order end
+  end,
+  -- fn(btn, row) for every shown row bubble
+  ForEachRowButton = function(fn)
+    local scrollBox = browseFrame and browseFrame.OrderList and browseFrame.OrderList.ScrollBox
+    if not scrollBox then return end
+    scrollBox:ForEachFrame(function(row)
+      local btn = row._powWhisperBtn
+      if btn and btn:IsShown() then fn(btn, row) end
+    end)
+  end,
+  -- Puts other tracking tables in place (session-only state, never saved)
+  -- and returns the ones it replaced
+  SwapTracking = function(whispered, pending, last)
+    local old = { whispered = whisperedPlayers, pending = pendingWhispers, last = lastWhisperTime }
+    whisperedPlayers, pendingWhispers, lastWhisperTime = whispered, pending, last
+    return old
+  end,
+  UpdateAllVisibleButtons = function(name) UpdateAllVisibleButtons(name) end,
 }

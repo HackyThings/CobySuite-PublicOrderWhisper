@@ -38,7 +38,7 @@ Guide.SECTIONS = {
       Bullets({
         "At a profession table, open the crafting orders and pick the " .. Key("Public") .. " tab",
         "Every order someone else placed has a chat bubble after the customer's name. Your own orders have none",
-        "Hover a bubble to see who it whispers and what it says",
+        "Hover a bubble to see who it whispers and your message as written. The order's details go in when you click",
         "Click it: that player gets your message, with the item they asked for linked in",
         "Open an order and the same bubble sits next to the customer's name",
       }),
@@ -53,12 +53,12 @@ Guide.SECTIONS = {
     summary = "Write it once; each order fills in its own details",
     body = {
       Bullets({
-        "Write it in the settings, under " .. Key("Message") .. ". The preview below the box shows it with an example item",
-        Key("{item}") .. " becomes a link to the crafted item, at the quality the order asks for",
-        Key("{name}") .. " becomes the customer's name, " .. Key("{tip}") .. " the tip on the order",
-        Key("Send a test whisper to yourself") .. " tries the text in the box, before you press Apply",
+        "Write it in the settings, under " .. Key("Message") .. ", or pick one under " .. Key("Ready-made messages") .. ". The example below the box shows how a customer reads it",
+        Key("{item}") .. " becomes a link to the crafted item, at the quality the order asks for when the game has that link",
+        Key("{name}") .. " becomes the customer's name, " .. Key("{tip}") .. " the tip on the order (0g when there is none). Click a chip under the box to put one in",
+        Key("Send test to myself") .. " tries the text in the box, before you press Apply",
       }),
-      Note("A whisper holds 255 bytes. The item link takes about 100, and an accented letter counts as two. A message that runs over is not sent, and chat says so."),
+      Note("A whisper holds 255 bytes. The item link takes about 100, and some characters use more than one byte. A message that runs over is not sent, and chat says so."),
     },
     try = {
       { "/pow message", "Show the current message" },
@@ -72,7 +72,7 @@ Guide.SECTIONS = {
     summary = "Green, red, and the cooldown",
     body = {
       Bullets({
-        "The bubble turns " .. U.WrapColor(U.Colors.SUCCESS_GREEN, "green") .. " for every player you've whispered since logging in",
+        "The bubble turns " .. U.WrapColor(U.Colors.SUCCESS_GREEN, "green") .. " for every player you've whispered, until you log out or reload",
         "It flashes " .. U.WrapColor(U.Colors.WARNING_RED, "red") .. " when the game says the player is offline or doesn't exist, and the green mark goes away",
         "Clicking the same player again too soon is refused, and chat says how long to wait. The cooldown is 60 seconds unless you change it: up to 120, or 0 for none",
       }),
@@ -88,15 +88,15 @@ Guide.SECTIONS = {
     body = {
       Bullets({
         "Open them with /pow settings, the gear beside the crafting orders window's close button, the minimap addon list, or Options > AddOns",
-        Key("Buttons") .. ": the bubble in the list, the bubble on an open order, and the green mark",
-        Key("Sending") .. ": a chat line for each whisper, and the cooldown",
-        Key("Put the whisper in my chat box instead of sending it") .. " lets you edit each whisper first, and Enter sends it",
+        Key("Bubbles") .. ": the bubble in the order list and the bubble on an open order",
+        Key("Sending") .. ": send right away or put the whisper in your chat box first, a chat line for each whisper, the green mark and the cooldown",
+        Key("Put it in my chat box first") .. " lets you edit each whisper, and Enter sends it",
         "Changes wait for " .. Key("Apply") .. ". Cancel or closing the window drops them",
       }),
-      Note("In chat box mode the bubble doesn't turn green, start the cooldown or flash red, since the addon can't tell whether you sent it."),
+      Note("In chat box mode a click doesn't turn the bubble green, start a cooldown or flash red, since the addon can't tell whether you sent it. Marks and cooldowns from earlier whispers stay."),
     },
     try = {
-      { "/pow settings", "Open the settings window" },
+      { "/pow settings", "Open or close the settings window" },
       { "/pow reset", "Put every setting back to its default" },
     },
   },

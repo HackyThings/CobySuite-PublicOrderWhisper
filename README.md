@@ -6,30 +6,24 @@
 
 A whisper button on public crafting orders in WoW Midnight (12.1).
 
-You are at your profession table, the Public tab of the crafting orders list is open, and there is an order you could fill right now if only it were a personal order with a proper tip. Coby's Public Order Whisper puts a chat bubble after every customer's name. Click it and that player gets your message, with the item they asked for linked in, so you can offer to craft it for them directly.
+Public orders have no reply button. Coby's Public Order Whisper puts a chat bubble after every customer's name: one click whispers them your message, with the item they asked for linked in, so you can offer to craft it as a personal order.
 
-## The Problem
+## Features
 
-Public orders are anonymous by design: you cannot reply to one, and reaching the customer means reading the name, typing a whisper, finding the item to link, and doing it again for the next order. Most crafters do not bother. Coby's Public Order Whisper turns all of that into one click with a message you write once.
+- A bubble on every public order placed by another player, in the order list and on an open order.
+- One message you write once, filled in per order: `{item}` (a link to the item, at the quality asked for when the game has that link), `{name}` (their name, without the realm) and `{tip}` (their tip, 0g when there is none).
+- The bubble turns **green** once you have whispered that player, and flashes **red** (dropping the green) if the game says they are offline or don't exist. Green clears when you log out or reload.
+- A per-player cooldown (60 seconds, up to 120, or off) so a double click never whispers anyone twice.
+- Optional: put the whisper in your chat box first, to edit it before you press Enter. That click doesn't mark the bubble or start the cooldown.
+- Ready-made messages to start from, and Send test to myself to see how yours reads.
 
-## How It Works
+## Quick Start
 
-1. **Open the crafting orders at a profession table and pick the Public tab.** Every order placed by someone else shows a chat bubble after the customer's name. Your own orders get none. The same bubble sits next to the customer's name when you open an order.
-2. **Hover the bubble** to see who it whispers and your message as you wrote it; `{item}`, `{name}` and `{tip}` are filled in when you click.
-3. **Click it.** The player is whispered your message. `{item}` in the message becomes a link to the item they asked for, at the quality tier they asked for; `{name}` becomes their name and `{tip}` the tip they offered.
-4. **The bubble turns green** for everyone you have whispered this session, so you do not message the same person twice by accident. A per-player cooldown (60 seconds by default, up to 120) refuses repeat clicks in the meantime.
-5. **Offline or misspelt?** If the game reports that the player could not be found, the bubble flashes red and the green mark is removed; the cooldown still runs, so a retry waits it out.
-6. **Prefer to edit before sending?** Turn on "Put the whisper in my chat box" in the settings. Each click then fills your chat box with the whisper, ready to change, and Enter sends it. In this mode the addon cannot tell whether you pressed Enter, so the click does not turn the bubble green, start the cooldown, or watch for an offline reply.
+1. At a profession table, open the crafting orders and pick the **Public** tab.
+2. Hover a bubble to see who it whispers and your message.
+3. Click it. The player gets your message.
 
-Placeholders in the message:
-
-| Placeholder | Becomes |
-|-------------|---------|
-| `{item}` | A link to the crafted item, at the requested quality when the order sets one; a recraft order links the item being recrafted when the game gives no crafted-item link for it |
-| `{name}` | The customer's character name, without the realm |
-| `{tip}` | The tip the customer set on the order, before the consortium cut, as plain text (for example "150g 25s") |
-
-WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented letter (é, ñ, ü) is two, and an item link takes about 100. The message box counts bytes. The settings window shows a preview with an example item link, and adds a red note with the byte count when even that example would not fit. A message that would run over is not sent, and the addon tells you so.
+WoW whispers hold 255 bytes; some characters use more than one, and an item link takes about 100. A message that would run over is not sent, and chat says so. The settings measure an example for you.
 
 ## Install
 
@@ -40,65 +34,43 @@ WoW whispers are limited to 255 bytes. A plain letter is one byte, an accented l
 ## Slash Commands
 
 ```
-/pow settings          Open the settings window (also /pow config, /pow options)
-/pow guide             Open or close the feature guide
-/pow changelog         What changed in each version
-/pow message <text>    Set the whisper message ({item}, {name}, {tip})
-/pow message           Show the current message
-/pow cooldown <sec>    Per-player cooldown in seconds, 0 to 120 (0 turns it off)
-/pow cooldown          Show the current cooldown
-/pow selftest          Whisper the current message to yourself
-/pow reset             Restore every setting to its default
-/pow debug             Open or close the debug log window
-/pow version           Print the addon version
-/pow help              Command list
+/pow settings              Open or close the settings window
+/pow guide                 Open or close the feature guide
+/pow changelog             Open or close the changelog: what changed in each version
+/pow debug                 Open or close the debug log window
+/pow message               Show the current whisper message
+/pow message <text>        Set the whisper message
+/pow cooldown              Show the whisper cooldown
+/pow cooldown <seconds>    Set the per-player cooldown (0 = off)
+/pow selftest              Whisper the current message to yourself
+/pow reset                 Restore every setting to its default
+/pow version               Print the addon version
+/pow help                  Show this help
 ```
 
-`/publicorderwhisper` works the same as `/pow`. `/pow` on its own opens the settings window, and `/pow help` prints the command list.
+`/pow` on its own opens the settings; `/publicorderwhisper` works the same as `/pow`.
 
 ## Guide and What's New
 
-`/pow guide`, or the **Guide** button in the settings window, opens a short guide: your first whisper, the message and its placeholders, what the colors and the cooldown mean, and the settings. It opens by itself the first time you log in with the addon.
-
-`/pow changelog` lists what changed in each version. After an update it opens by itself with every version since the one you last played.
+`/pow guide` (or **Guide** in the settings) opens a short guide; it opens by itself for new players. `/pow changelog` lists what changed; after later updates it opens by itself.
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders window, the addon's entry in the minimap addon list, or the Open Settings button on its page under Options > AddOns. The settings are grouped into categories on the left. Changes take effect when you press Apply; Cancel or closing the window throws them away. Defaults asks first, then fills in every default, and nothing changes until you press Apply. Drag the window's bottom-right corner to make it bigger; it keeps that size.
+Open with `/pow settings`, the gear beside the close button of the crafting orders list, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; Cancel drops them.
 
-**Message**
-- The whisper text (default: Hi! I can craft {item} for you. Send me a personal order!), with a live preview and a button that whispers it to you as a test (both use the text in the box, before you apply it).
-
-**Buttons**
-- Whisper icon in the order list, Public tab (default on)
-- Whisper icon on the order details page, the one that opens when you click an order (default on)
-- Turn the icon green for players whispered this session (default on)
-
-**Sending**
-- Put the whisper in my chat box instead of sending it (default off. The click fills your chat box with the whisper so you can edit it; Enter sends. While it is on, clicks do not turn the bubble green, start the cooldown or flash red for an offline player.)
-- Print a chat line for each whisper sent (default on. Errors and failed whispers are always printed.)
-- Cooldown per player (default 60 seconds, up to 120. Off sends every click.)
+- **Message:** your whisper, the placeholder chips, an example as the customer sees it, its length in bytes, Send test to myself, and ready-made messages.
+- **Bubbles:** show the bubble in the order list, on an open order, or both.
+- **Sending:** send right away or put it in your chat box first, a chat line after each whisper, the green mark, and the cooldown.
 
 ## Troubleshooting
 
-**There is no bubble on the order list.**
+**No bubble on the order list.** Only the Public tab gets bubbles, and only on other players' orders. Check Bubbles in `/pow settings`. A row reached in combat gets its bubble when combat ends. If it still fails, `/pow debug` shows why.
 
-- Only the Public tab gets bubbles, and only on orders placed by other players.
-- Check that "Whisper icon in the order list" is on in `/pow settings`.
-- In combat, a row that has not had a bubble yet gets one when combat ends.
-- Run `/pow debug`. If the log says the customer name cell could not be found, another addon has reshaped the order list or a WoW patch changed it. The log is what I need to fix it (see below).
+**Chat says the whisper is too long.** A real order's item link can be longer than the example. Chat gives the size in bytes: shorten the message by at least the difference.
 
-**The whisper was not sent and chat says it is too long.**
+**The bubble flashed red.** The player is offline or doesn't exist; public orders can outlast their customer's session.
 
-- The item link is long, and a real order's link is often longer than the example in the preview. The chat line gives the whisper's size in bytes. Shorten the message in `/pow settings` by at least the difference. The counter under the box shows the message's bytes without the link, and accented letters count as two.
-
-**The bubble flashed red.**
-
-- The game reported that the player is offline or does not exist. Public orders can outlive their customer's session.
-
-**I see "attempt to perform arithmetic on a secret number value" errors from MoneyFrame with another crafting-order addon installed.**
-
-- That error comes from the other addon rebuilding Blizzard's order table. Coby's Public Order Whisper drops that one error when it comes from the crafting orders list, so it does not spam you. The same error from anywhere else, and every other error, still reaches your error display, and the first one dropped is written to `/pow debug` with its details; the log notes the total again at 10, 100 and 1000. If an error addon such as BugSack handles your errors, it takes over and keeps showing them.
+**"Secret number value" errors from MoneyFrame with another crafting-order addon.** That error comes from the other addon. This addon hides it only when it comes from the crafting orders window, and notes it in `/pow debug`; every other error still shows. With an error addon such as BugSack, that addon shows it instead.
 
 ## License
 
@@ -106,16 +78,9 @@ GPL-2.0. See [LICENSE](LICENSE).
 
 ## Issues / Feedback
 
-For bug reports, the cleanest path is the debug log. It is self-contained: it includes the addon version, your WoW build, a snapshot of every setting, and a timestamped event timeline. No need to paste anything else.
+Found a bug? Run `/pow debug`, press **Copy Last 250** and send the text with a line about what you were doing. The log holds the addon version, your WoW build and your settings.
 
-**How to capture and send:**
-
-1. Reproduce the issue.
-2. Run `/pow debug` to open the debug window and click **Copy Last 250**.
-3. Email them to **hackythings@gmail.com** with a sentence about what you were doing.
-
-**Other channels:**
-
-- **BugSack errors:** whisper the report straight to **Figment-Illidan** in-game. BugSack copies the stack trace for you. Mention how to reproduce if you can.
-- **CurseForge comments:** drop a note on the [project page](https://www.curseforge.com/wow/addons/public-order-whisper). Best for general feedback and quick questions.
-- **GitHub issues:** [open one here](https://github.com/HackyThings/CobySuite-PublicOrderWhisper/issues). Best for reproducible bugs and feature proposals where back-and-forth helps. Attach the debug-log paste here too if it is relevant.
+- **Email:** hackythings@gmail.com
+- **BugSack errors:** whisper them to **Figment-Illidan** in game.
+- **CurseForge:** comment on the [project page](https://www.curseforge.com/wow/addons/public-order-whisper) for questions and feedback.
+- **GitHub:** [open an issue](https://github.com/HackyThings/CobySuite-PublicOrderWhisper/issues) for bugs you can reproduce.

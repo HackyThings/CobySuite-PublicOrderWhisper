@@ -4,6 +4,29 @@ All notable changes to Coby's Public Order Whisper are documented here. Format f
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-10-01
+
+### Added
+
+- **Ready-made messages:** under Message, pick one in "Start from" and press "Use this message", then make it yours.
+- **Chips:** the buttons under the message box put `{item}`, `{name}` or `{tip}` in where you are typing.
+
+### Changed
+
+- **Settings window:** redesigned, with three pages: Message, Bubbles (was Buttons) and Sending.
+- **Message:** shows your whisper as the customer will read it and measures a sample in bytes.
+- **Empty message box:** the settings now say so instead of quietly keeping the old text.
+- **Send test to myself:** sends the text in the box, even before you apply it.
+- `{tip}` on an order with no tip now reads 0g instead of 0c.
+- Length messages now say some characters use more than one byte, instead of "accented letters count as two".
+
+### Fixed
+
+- The minimap addon list's tooltip now matches the other Coby addons: the addon's icon, and Click: Open settings.
+- The green-mark setting now says a failed whisper still flashes red when the mark is off, and that green clears when you log out or reload.
+- With no message set, a bubble's tooltip no longer says "Click to send".
+- An order whose item link comes back empty now says "your item" instead of leaving a gap.
+
 ## [1.0.3] - 2026-10-01
 
 ### Added
@@ -67,7 +90,8 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.4
 [1.0.3]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.3
 [1.0.2]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.2
 [1.0.1]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.1

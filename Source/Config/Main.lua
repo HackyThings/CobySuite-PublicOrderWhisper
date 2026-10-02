@@ -52,8 +52,9 @@ Config.Get           = base.Get
 Config.Set           = base.Set
 Config.Reset         = base.Reset
 
--- The longest whisper WoW sends, in bytes (an accented letter takes two;
--- treated as bytes until checked against the live server). The settings box
+-- The longest whisper WoW sends, in bytes as the client counts them (a
+-- character takes one to four; in game a 312-byte, 191-letter whisper was
+-- refused, and the exact 255-byte edge is unsent). The settings box
 -- and the slash command cap the template here, and the whisper module checks
 -- the built message, item link included.
 Config.MAX_MESSAGE_LENGTH = 255
