@@ -115,7 +115,7 @@ PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
               Config.Set(Config.Options.WHISPER_COOLDOWN, seconds)
               Message("Whisper cooldown set to " .. White(seconds > 0 and (seconds .. "s") or "off"))
             else
-              Message(("Invalid value. Usage: /pow cooldown <0-%d>"):format(Config.MAX_COOLDOWN))
+              Message(("Invalid value. Usage: /pow cooldown <seconds> (0 to %d, 0 = off)"):format(Config.MAX_COOLDOWN))
             end
           end
         end,

@@ -4,7 +4,7 @@
 
 PublicOrderWhisper.DebugWindow = CobySuite_PublicOrderWhisper.Debug.NewWindow({
   windowName = "PublicOrderWhisperDebugWindow",
-  title = "Coby's Public Order Whisper Debug Log",
+  title = CobySuite_PublicOrderWhisper.Utilities.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. " Debug Log",
   icon = PublicOrderWhisper.ICON,
   logger = PublicOrderWhisper.Debug,
 })

@@ -39,7 +39,7 @@ Guide.SECTIONS = {
         "At a profession table, open the crafting orders and pick the " .. Key("Public") .. " tab",
         "Every order someone else placed has a chat bubble after the customer's name. Your own orders have none",
         "Hover a bubble to see who it whispers and your message as written. The order's details go in when you click",
-        "Click it: that player gets your message, with the item they asked for linked in",
+        "Click it to send them your message, with the item they asked for linked in. With " .. Key("Put it in my chat box first") .. " chosen, it waits in your chat box for Enter",
         "Open an order and the same bubble sits next to the customer's name",
       }),
       Note("Whisper yourself first to see how the message reads."),
@@ -72,9 +72,9 @@ Guide.SECTIONS = {
     summary = "Green, red, and the cooldown",
     body = {
       Bullets({
-        "The bubble turns " .. U.WrapColor(U.Colors.SUCCESS_GREEN, "green") .. " for every player you've whispered, until you log out or reload",
+        "After a whisper the bubble turns " .. U.WrapColor(U.Colors.SUCCESS_GREEN, "green") .. " (unless you turn green marks off), until you log out or reload",
         "It flashes " .. U.WrapColor(U.Colors.WARNING_RED, "red") .. " when the game says the player is offline or doesn't exist, and the green mark goes away",
-        "Clicking the same player again too soon is refused, and chat says how long to wait. The cooldown is 60 seconds unless you change it: up to 120, or 0 for none",
+        "Clicking the same player again too soon is refused, and chat says how long to wait. The bubble's tooltip counts the wait down. The cooldown is 60 seconds unless you change it: up to 120, or 0 for none",
       }),
       Note("Public orders can outlast their customer's session, so a red flash is common."),
     },
@@ -87,13 +87,13 @@ Guide.SECTIONS = {
     summary = "Edit before sending, and choose which bubbles show",
     body = {
       Bullets({
-        "Open them with /pow settings, the gear beside the crafting orders window's close button, the minimap addon list, or Options > AddOns",
+        "Open them with " .. Key("/pow settings") .. ", the gear beside the crafting orders window's close button, the minimap addon list, or " .. Key("Options > AddOns"),
         Key("Bubbles") .. ": the bubble in the order list and the bubble on an open order",
         Key("Sending") .. ": send right away or put the whisper in your chat box first, a chat line for each whisper, the green mark and the cooldown",
         Key("Put it in my chat box first") .. " lets you edit each whisper, and Enter sends it",
-        "Changes wait for " .. Key("Apply") .. ". Cancel or closing the window drops them",
+        "Changes wait for " .. Key("Apply") .. ". " .. Key("Undo edits") .. " or closing the window drops them",
       }),
-      Note("In chat box mode a click doesn't turn the bubble green, start a cooldown or flash red, since the addon can't tell whether you sent it. Marks and cooldowns from earlier whispers stay."),
+      Note("In chat box mode the addon can't tell whether you sent the whisper, so it adds no green mark, cooldown or red flash. Earlier marks and cooldowns still apply."),
     },
     try = {
       { "/pow settings", "Open or close the settings window" },
@@ -104,7 +104,7 @@ Guide.SECTIONS = {
 
 local guide = CobySuite_PublicOrderWhisper.UI.CreateGuideWindow({
   name = "PublicOrderWhisperGuideWindow",
-  title = "Coby's Public Order Whisper Guide",
+  title = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. " Guide",
   icon = PublicOrderWhisper.ICON,
   intro = "New here? Start with the first section. Click any heading to open or close it.",
   footer = "Open this guide any time with " .. U.WrapColor(U.Colors.HELP_COMMAND, "/pow guide"),

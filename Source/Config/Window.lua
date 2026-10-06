@@ -91,8 +91,8 @@ local function BuildMessage(panel, w)
   -- The limit and the counter are in bytes, WoW's unit for a whisper
   rows.message = panel:MultiLine{
     key         = Opt.WHISPER_MESSAGE,
-    tooltip     = "What the customer reads. Press Apply to save it.",
-    description = "The counter is in bytes. Some characters use more than one byte.",
+    tooltip     = "Your message. The placeholders fill in for each order. Press Apply to save it.",
+    description = "The box counts your typed bytes. Length measures the sample below with placeholders filled in. Some characters use more than one byte.",
     height      = MESSAGE_BOX_HEIGHT,
     fontScale   = MESSAGE_FONT_SCALE,
     maxBytes    = Config.MAX_MESSAGE_LENGTH,
@@ -107,7 +107,7 @@ local function BuildMessage(panel, w)
         tooltip = "The tip on the order, in gold and silver. An order with no tip reads 0g." },
     },
   }
-  w.MessageBox = rows.message.Box   -- for the WhisperSuite
+  w.MessageBox = rows.message.Box   -- for the suites and the Verify catalog
 
   rows.emptyNote = panel:Note{
     text = "Enter a message to apply. Until then your saved one stays.",
@@ -140,6 +140,16 @@ local function BuildMessage(panel, w)
     end,
     description = "Actual length varies by order. A whisper that runs over is not sent, and chat says so.",
     visibleWhen = HasDraft,
+  }
+  -- Says plainly what the red meter means; empty text takes no room
+  rows.overNote = panel:Note{
+    text = function()
+      local over = HasDraft() and #SampleMessage() - Config.MAX_MESSAGE_LENGTH or 0
+      if over <= 0 then return "" end
+      return ("Too long: the sample is %d bytes over. Whispers over %d bytes are not sent."):format(
+        over, Config.MAX_MESSAGE_LENGTH)
+    end,
+    color = U.Colors.WARNING_RED,
   }
 
   rows.testButton = panel:Button{
@@ -257,7 +267,7 @@ local function BuildSending(panel)
     key = Opt.OPEN_IN_CHAT,
     options = {
       { value = false, label = "Send it right away",
-        description = "The customer gets your whisper the moment you click." },
+        description = "Sends your whisper when you click." },
       { value = true, label = "Put it in my chat box first",
         description = "Your chat box opens with the whisper, ready to change. Press Enter to send it." },
     },
@@ -270,7 +280,7 @@ local function BuildSending(panel)
   panel:Section("Keeping track", { icon = ICONS .. "INV_Misc_PocketWatch_01" })
   panel:Legend{
     items = {
-      { icon = BUBBLE, color = U.Colors.HIGHLIGHT_WHITE, label = "Ready" },
+      { icon = BUBBLE, color = U.Colors.HIGHLIGHT_WHITE, label = "Not marked" },
       { icon = BUBBLE, color = U.Colors.SUCCESS_GREEN, label = "Whispered this session" },
       { icon = BUBBLE, color = U.Colors.WARNING_RED, label = "Offline or not found" },
     },
@@ -281,13 +291,13 @@ local function BuildSending(panel)
   }
   rows.cooldown = panel:Slider{
     key = Opt.WHISPER_COOLDOWN, label = "Wait before whispering the same player again",
-    tooltip = "Stops a double click from whispering someone twice. Off lets every click through.",
+    tooltip = "The cooldown stops another whisper to the same customer, even from a different order. Set it to Off to allow every click.",
     min = 0, max = Config.MAX_COOLDOWN, step = 1,
     minLabel = "Off", maxLabel = "2 min",
     format = function(v) if v <= 0 then return "Off" end return ("%d s"):format(v) end,
   }
   panel:Note{
-    text = "Composing creates no new green marks or cooldowns. Marks and cooldowns from earlier whispers stay.",
+    text = "In chat box mode the addon can't tell whether you sent the whisper, so it adds no green mark, cooldown or red flash. Earlier marks and cooldowns still apply.",
     visibleWhen = function(get) return get(Opt.OPEN_IN_CHAT) and true or false end,
   }
 end
@@ -318,7 +328,7 @@ window = UI.CreateSettingsWindow({
   },
 })
 
--- The page's pieces, for the suites
+-- The page's pieces, for the suites and the Verify catalog
 Config._window = { window = window, rows = rows, Draft = Draft, UseStarter = UseStarter, STARTERS = STARTERS }
 
 -------------------------------------------------------------------------------

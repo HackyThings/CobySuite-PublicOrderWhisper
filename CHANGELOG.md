@@ -4,6 +4,23 @@ All notable changes to Coby's Public Order Whisper are documented here. Format f
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-10-06
+
+### Added
+
+- **Bubble tooltip:** while the cooldown holds a customer back, the tooltip counts down the wait instead of saying "Click to send". A click updates the tooltip at once.
+- **Message:** a red line says when the sample runs over the 255-byte limit.
+
+### Changed
+
+- **Settings:** the Cancel button is now **Undo edits**, with the same job: it drops changes you have not applied.
+- Many smaller look and wording improvements across the windows.
+
+### Fixed
+
+- The settings gear beside the crafting orders window's close button now shows. It worked, but the window's frame was drawn over it.
+- Several smaller bug fixes.
+
 ## [1.0.4] - 2026-10-01
 
 ### Added
@@ -90,7 +107,8 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.5
 [1.0.4]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.4
 [1.0.3]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.3
 [1.0.2]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.2

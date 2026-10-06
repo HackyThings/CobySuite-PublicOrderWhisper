@@ -16,6 +16,23 @@ PublicOrderWhisper.Data = PublicOrderWhisper.Data or {}
 
 PublicOrderWhisper.Data.Changelog = {
   {
+    version = "1.0.5",
+    title = "Cooldown countdown and a visible gear",
+    date = "2026-10-06",
+    new = {
+      "Bubble tooltip: counts down the cooldown before you can whisper",
+      "Message: a red line when the sample runs over 255 bytes",
+    },
+    changed = {
+      "Settings: Cancel is now Undo edits",
+      "Many smaller look and wording improvements",
+    },
+    fixed = {
+      "Settings gear on the crafting orders window now shows",
+      "Several smaller bug fixes",
+    },
+  },
+  {
     version = "1.0.4",
     title = "Ready-made messages",
     date = "2026-10-01",

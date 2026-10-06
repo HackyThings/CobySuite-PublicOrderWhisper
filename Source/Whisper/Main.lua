@@ -310,6 +310,18 @@ local function NoteAttempt(customerName, outcome, bytes, line)
     sent = outcome == "sent" }
 end
 
+-- The seconds left, rounded up, before customerName can be whispered again;
+-- 0 when the cooldown is off or has run out. Reads only: the send path and
+-- the bubble's tooltip both ask.
+local function CooldownLeft(customerName)
+  local cooldown = Config.Get(Config.Options.WHISPER_COOLDOWN) or 0
+  local lastTime = customerName and lastWhisperTime[customerName]
+  if cooldown <= 0 or not lastTime then return 0 end
+  local left = cooldown - (seams.Now() - lastTime)
+  if left <= 0 then return 0 end
+  return math.ceil(left)
+end
+
 -------------------------------------------------------------------------------
 -- Send whisper for a given order
 -------------------------------------------------------------------------------
@@ -325,11 +337,8 @@ local function SendWhisperForOrder(order)
     return
   end
 
-  local cooldown = Config.Get(Config.Options.WHISPER_COOLDOWN) or 0
-  local lastTime = lastWhisperTime[customerName]
-  local now = seams.Now()
-  if cooldown > 0 and lastTime and (now - lastTime) < cooldown then
-    local remaining = math.ceil(cooldown - (now - lastTime))
+  local remaining = CooldownLeft(customerName)
+  if remaining > 0 then
     Message(("Cooldown: wait %ds before whispering %s again."):format(remaining, customerName))
     NoteAttempt(customerName, "cooldown")
     return
@@ -396,7 +405,7 @@ end
 
 -- Writes only to the tooltip it is handed. state (the test catalogs only)
 -- stands in for the settings and the tracking: { message, openInChat,
--- whispered }, each field optional.
+-- whispered, cooldown (seconds left) }, each field optional.
 local function BuildWhisperTooltip(tooltip, customerName, state)
   local C = U.Colors
   tooltip:SetText("Whisper " .. (customerName and Ambiguate(customerName, "short") or ""), unpack(C.HIGHLIGHT_WHITE))
@@ -406,20 +415,40 @@ local function BuildWhisperTooltip(tooltip, customerName, state)
   if hasMessage then
     AddTooltipLine(tooltip, template, C.LIGHT_GRAY, true)
   else
-    AddTooltipLine(tooltip, "No message set. Open /pow settings.", C.WARNING_RED, true)
+    -- Two lines, the command never split across them
+    AddTooltipLine(tooltip, "No message set.", C.WARNING_RED, false)
+    AddTooltipLine(tooltip, "Open /pow settings to write one.", C.WARNING_RED, false)
   end
   local openInChat = Config.Get(Config.Options.OPEN_IN_CHAT)
   if state and state.openInChat ~= nil then openInChat = state.openInChat end
   local whispered = customerName and whisperedPlayers[customerName]
   if state and state.whispered ~= nil then whispered = state.whispered end
-  -- With no message a click only says so in chat, so no click line
-  if hasMessage or whispered then tooltip:AddLine(" ") end
-  if hasMessage then
+  local cooldown = CooldownLeft(customerName)
+  if state and state.cooldown ~= nil then cooldown = state.cooldown end
+  if hasMessage or whispered or cooldown > 0 then tooltip:AddLine(" ") end
+  -- A click held back by the cooldown only says so in chat, and so does one
+  -- with no message: no click line for either
+  if cooldown > 0 then
+    AddTooltipLine(tooltip, ("Cooldown: wait %ds before whispering again."):format(cooldown), C.CAUTION_ORANGE, false)
+  elseif hasMessage then
     AddTooltipLine(tooltip, openInChat and "Click to put the whisper in your chat box." or "Click to send.", C.INFO_BLUE)
   end
   if whispered then
     AddTooltipLine(tooltip, "Already whispered this session.", C.SUCCESS_GREEN)
   end
+end
+
+-- While a bubble's tooltip counts a cooldown down, rebuild it each second
+-- (rebuild(btn) owns, fills and shows it again), so the count runs and the
+-- click line comes back at the end. One refresh is pending per button; it
+-- stops once the tooltip has left the button or the button is hidden.
+local function KeepCooldownFresh(btn, customerName, rebuild)
+  if btn._powTipRefresh or CooldownLeft(customerName) <= 0 then return end
+  btn._powTipRefresh = true
+  seams.After(1, function()
+    btn._powTipRefresh = nil
+    if GameTooltip:IsOwned(btn) and btn:IsVisible() then rebuild(btn) end
+  end)
 end
 
 -------------------------------------------------------------------------------
@@ -496,10 +525,14 @@ end
 -- Browse list rows
 -------------------------------------------------------------------------------
 -- Click and hover both resolve the row's order at that moment.
+local OnRowButtonEnter   -- defined below
+
 local function OnRowButtonClick(btn)
   local order = ResolveRowOrder(btn)
   if order then
     SendWhisperForOrder(order)
+    -- A click under the pointer shows its outcome (the mark, the cooldown) at once
+    if GameTooltip:IsOwned(btn) and btn:IsVisible() then OnRowButtonEnter(btn) end
   end
 end
 
@@ -512,10 +545,14 @@ local function BuildRowTooltip(tooltip, btn)
   return true
 end
 
-local function OnRowButtonEnter(btn)
+-- Also the cooldown's refresh: each second resolves the row again, so a row
+-- reused for another order shows that one
+OnRowButtonEnter = function(btn)
   GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
   if BuildRowTooltip(GameTooltip, btn) then
     GameTooltip:Show()
+    local order = ResolveRowOrder(btn)
+    KeepCooldownFresh(btn, order and order.customerName, OnRowButtonEnter)
   else
     GameTooltip:Hide()
   end
@@ -593,10 +630,25 @@ local function CreateOrderViewButton(orderInfo)
   end
 
   btn:SetScript("OnClick", OnOrderViewClick)
-  -- fillable: the builder writes only to the tooltip it is handed
-  UI.AddDynamicTooltip(btn, function(tooltip)
+  local function Fill(tooltip)
     BuildWhisperTooltip(tooltip, currentOrder and currentOrder.customerName)
-  end, { fillable = true })
+  end
+  -- fillable: the builder writes only to the tooltip it is handed
+  UI.AddDynamicTooltip(btn, Fill, { fillable = true })
+  -- The cooldown's count runs down while the tooltip stays
+  local function Rebuild(b)
+    GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+    Fill(GameTooltip)
+    GameTooltip:Show()
+    KeepCooldownFresh(b, currentOrder and currentOrder.customerName, Rebuild)
+  end
+  btn:HookScript("OnEnter", function(b)
+    KeepCooldownFresh(b, currentOrder and currentOrder.customerName, Rebuild)
+  end)
+  -- A click under the pointer shows its outcome (the mark, the cooldown) at once
+  btn:HookScript("OnClick", function(b)
+    if GameTooltip:IsOwned(b) and b:IsVisible() then Rebuild(b) end
+  end)
   btn:Hide()
 
   orderViewButton = btn
@@ -625,7 +677,15 @@ local function PositionSettingsButton()
   local closeButton = ProfessionsFrame.CloseButton
   local neighbour = (minimize and minimize:IsShown() and minimize) or closeButton
   settingsButton:ClearAllPoints()
+  -- The orders page sits at frame level 100 and the window's border art
+  -- (NineSlice, 500) covers the title bar, so the gear is lifted above both
+  -- the border and its neighbour or it draws underneath (seen in game
+  -- 2026-10-05, Task #234). Re-applied on each Show, since a parent level
+  -- change re-levels its children.
   if neighbour then
+    local border = ProfessionsFrame.NineSlice
+    local level = math.max(neighbour:GetFrameLevel(), border and border:GetFrameLevel() or 0)
+    settingsButton:SetFrameLevel(level + 1)
     settingsButton:SetPoint("RIGHT", neighbour, "LEFT", SETTINGS_BUTTON_GAP, 0)
   else
     settingsButton:SetPoint("TOPRIGHT", browseFrame, "TOPRIGHT", SETTINGS_BUTTON_FALLBACK.x, SETTINGS_BUTTON_FALLBACK.y)
@@ -902,7 +962,8 @@ do
 end
 
 -------------------------------------------------------------------------------
--- Test seams (WhisperSuite). Nothing here is called by the addon itself.
+-- Test seams (the suites and the Verify catalog). Nothing here is called by
+-- the addon itself.
 -------------------------------------------------------------------------------
 Whisper._test = {
   seams = seams,

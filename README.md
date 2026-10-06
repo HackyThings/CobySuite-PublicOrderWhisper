@@ -12,8 +12,8 @@ Public orders have no reply button. Coby's Public Order Whisper puts a chat bubb
 
 - A bubble on every public order placed by another player, in the order list and on an open order.
 - One message you write once, filled in per order: `{item}` (a link to the item, at the quality asked for when the game has that link), `{name}` (their name, without the realm) and `{tip}` (their tip, 0g when there is none).
-- The bubble turns **green** once you have whispered that player, and flashes **red** (dropping the green) if the game says they are offline or don't exist. Green clears when you log out or reload.
-- A per-player cooldown (60 seconds, up to 120, or off) so a double click never whispers anyone twice.
+- The bubble turns **green** once you have whispered that player (you can turn this off), and flashes **red** (dropping the green) if the game says they are offline or don't exist. Green clears when you log out or reload.
+- A per-player cooldown (60 seconds, up to 120, or off), so a double click or a second order from the same customer doesn't whisper them twice. The bubble's tooltip counts it down.
 - Optional: put the whisper in your chat box first, to edit it before you press Enter. That click doesn't mark the bubble or start the cooldown.
 - Ready-made messages to start from, and Send test to myself to see how yours reads.
 
@@ -21,7 +21,7 @@ Public orders have no reply button. Coby's Public Order Whisper puts a chat bubb
 
 1. At a profession table, open the crafting orders and pick the **Public** tab.
 2. Hover a bubble to see who it whispers and your message.
-3. Click it. The player gets your message.
+3. Click it. The player gets your message (or, in chat box mode, it waits in your chat box for Enter).
 
 WoW whispers hold 255 bytes; some characters use more than one, and an item link takes about 100. A message that would run over is not sent, and chat says so. The settings measure an example for you.
 
@@ -56,7 +56,7 @@ WoW whispers hold 255 bytes; some characters use more than one, and an item link
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders list, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; Cancel drops them.
+Open with `/pow settings`, the gear beside the close button of the crafting orders window, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; **Undo edits** drops them.
 
 - **Message:** your whisper, the placeholder chips, an example as the customer sees it, its length in bytes, Send test to myself, and ready-made messages.
 - **Bubbles:** show the bubble in the order list, on an open order, or both.
