@@ -325,7 +325,7 @@ end
 -------------------------------------------------------------------------------
 -- Send whisper for a given order
 -------------------------------------------------------------------------------
-local function SendWhisperForOrder(order)
+function Whisper.SendWhisperForOrder(order)
   if not order then
     Debug.Warn("WHISPER", "SendWhisperForOrder: no order data")
     return
@@ -406,7 +406,7 @@ end
 -- Writes only to the tooltip it is handed. state (the test catalogs only)
 -- stands in for the settings and the tracking: { message, openInChat,
 -- whispered, cooldown (seconds left) }, each field optional.
-local function BuildWhisperTooltip(tooltip, customerName, state)
+function Whisper.BuildWhisperTooltip(tooltip, customerName, state)
   local C = U.Colors
   tooltip:SetText("Whisper " .. (customerName and Ambiguate(customerName, "short") or ""), unpack(C.HIGHLIGHT_WHITE))
   local template = Config.Get(Config.Options.WHISPER_MESSAGE)
@@ -530,7 +530,7 @@ local OnRowButtonEnter   -- defined below
 local function OnRowButtonClick(btn)
   local order = ResolveRowOrder(btn)
   if order then
-    SendWhisperForOrder(order)
+    Whisper.SendWhisperForOrder(order)
     -- A click under the pointer shows its outcome (the mark, the cooldown) at once
     if GameTooltip:IsOwned(btn) and btn:IsVisible() then OnRowButtonEnter(btn) end
   end
@@ -541,7 +541,7 @@ end
 local function BuildRowTooltip(tooltip, btn)
   local order = ResolveRowOrder(btn)
   if not order then return false end
-  BuildWhisperTooltip(tooltip, order.customerName)
+  Whisper.BuildWhisperTooltip(tooltip, order.customerName)
   return true
 end
 
@@ -558,7 +558,7 @@ OnRowButtonEnter = function(btn)
   end
 end
 
-local function SetupRowWhisperButton(row, order)
+function Whisper.SetupRowWhisperButton(row, order)
   if not Config.Get(Config.Options.SHOW_LIST_BUTTONS) or not CanWhisper(order) then
     if row._powWhisperBtn then row._powWhisperBtn:Hide() end
     return
@@ -603,6 +603,21 @@ local function SetupRowWhisperButton(row, order)
   UpdateButtonColor(btn, customerName)
 end
 
+-- The coalesced re-lay's body: every shown row's button laid out again from
+-- its row's current order. A module function so the hook callback reaches it
+-- by name.
+function Whisper.RelayVisibleRows()
+  if not (browseFrame and browseFrame:IsShown()) then return end
+  local scrollBox = browseFrame.OrderList and browseFrame.OrderList.ScrollBox
+  if not scrollBox then return end
+  scrollBox:ForEachFrame(function(row)
+    local elementData = row.GetElementData and row:GetElementData()
+    if elementData then
+      Whisper.SetupRowWhisperButton(row, GetOrderFromElementData(elementData))
+    end
+  end)
+end
+
 -------------------------------------------------------------------------------
 -- Order view (details): chat bubble icon next to the customer name
 -------------------------------------------------------------------------------
@@ -611,7 +626,7 @@ local RefreshOrderViewButton   -- defined below
 -- The order shown is checked again at click time, like a row's.
 local function OnOrderViewClick()
   if Config.Get(Config.Options.SHOW_DETAIL_BUTTON) and CanWhisper(currentOrder) then
-    SendWhisperForOrder(currentOrder)
+    Whisper.SendWhisperForOrder(currentOrder)
   else
     RefreshOrderViewButton()
   end
@@ -631,7 +646,7 @@ local function CreateOrderViewButton(orderInfo)
 
   btn:SetScript("OnClick", OnOrderViewClick)
   local function Fill(tooltip)
-    BuildWhisperTooltip(tooltip, currentOrder and currentOrder.customerName)
+    Whisper.BuildWhisperTooltip(tooltip, currentOrder and currentOrder.customerName)
   end
   -- fillable: the builder writes only to the tooltip it is handed
   UI.AddDynamicTooltip(btn, Fill, { fillable = true })
@@ -695,7 +710,7 @@ end
 -------------------------------------------------------------------------------
 -- Hook into Blizzard Professions UI
 -------------------------------------------------------------------------------
-local function SetupHooks()
+function Whisper.SetupHooks()
   local ordersPage = ProfessionsFrame and ProfessionsFrame.OrdersPage
   if not ordersPage then
     Debug.Warn("INIT", "ProfessionsFrame.OrdersPage not found")
@@ -721,15 +736,7 @@ local function SetupHooks()
     local scrollBox = browseFrame.OrderList.ScrollBox
     if scrollBox then
       -- One refresh on the next frame no matter how many hooks fire before it
-      refreshRowButtons = U.Coalesce(0, function()
-        if not browseFrame:IsShown() then return end
-        scrollBox:ForEachFrame(function(row)
-          local elementData = row.GetElementData and row:GetElementData()
-          if elementData then
-            SetupRowWhisperButton(row, GetOrderFromElementData(elementData))
-          end
-        end)
-      end)
+      refreshRowButtons = U.Coalesce(0, function() Whisper.RelayVisibleRows() end)
       local function ScheduleButtonRefresh()
         refreshRowButtons:Call()
       end
@@ -797,7 +804,7 @@ end
 -- Not before login: another addon can load Blizzard_Professions ahead of this
 -- one, and the hooks read settings that exist only once ours have loaded
 EventUtil.RegisterOnceFrameEventAndCallback("PLAYER_LOGIN", function()
-  EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", SetupHooks)
+  EventUtil.ContinueOnAddOnLoaded("Blizzard_Professions", function() Whisper.SetupHooks() end)
 end)
 
 -- Warm the item cache for the settings preview and the test whisper.
@@ -857,10 +864,22 @@ local function HandleSystemMessage(message)
 end
 
 local failureFrame = CreateFrame("Frame")
+Whisper.failureFrame = failureFrame   -- its OnEvent is reached by name from a development tool
 failureFrame:RegisterEvent("CHAT_MSG_SYSTEM")
 failureFrame:SetScript("OnEvent", function(_, _, message)
   HandleSystemMessage(message)
 end)
+
+-- The placer's name can arrive after the order opens: refresh the bubble one frame later
+-- (our own frame; Blizzard's order table is never written)
+local customerNameFrame = CreateFrame("Frame")
+customerNameFrame:RegisterEvent("CRAFTINGORDERS_UPDATE_CUSTOMER_NAME")
+local function OnCustomerName(orderID)
+  if currentOrder and currentOrder.orderID == orderID then
+    seams.After(0, RefreshOrderViewButton)
+  end
+end
+customerNameFrame:SetScript("OnEvent", function(_, _, orderID) OnCustomerName(orderID) end)
 
 -------------------------------------------------------------------------------
 -- Taint error suppression: MoneyFrame secret-value arithmetic
@@ -946,11 +965,17 @@ local handlerState = {}
 local installedHandler
 do
   local origErrorHandler = geterrorhandler()
-  installedHandler = MakeErrorHandler(moneyFilter, function(err, ...)
+  -- The handler's body is a module function (reached by name from a
+  -- development tool); the installed handler stays one fixed function, since
+  -- ReportHandlerState compares it by identity
+  Whisper.HandleError = MakeErrorHandler(moneyFilter, function(err, ...)
     return origErrorHandler(err, ...)
   end, function()
     return debugstack(2, 40, 20)
   end)
+  installedHandler = function(err, ...)
+    return Whisper.HandleError(err, ...)
+  end
   seterrorhandler(installedHandler)
   local function Check()
     ReportHandlerState(geterrorhandler(), installedHandler,
@@ -977,10 +1002,10 @@ Whisper._test = {
     pendingWhispers[name] = nil
     lastWhisperTime[name] = nil
   end,
-  SendWhisperForOrder = SendWhisperForOrder,
+  SendWhisperForOrder = Whisper.SendWhisperForOrder,
   -- A copy of the last click's outcome on an order, or nil
   LastAttempt = function() return lastAttempt and CopyTable(lastAttempt) end,
-  SetupRowWhisperButton = SetupRowWhisperButton,
+  SetupRowWhisperButton = Whisper.SetupRowWhisperButton,
   OnRowButtonClick = OnRowButtonClick,
   BuildRowTooltip = BuildRowTooltip,
   NewSuppressionFilter = NewSuppressionFilter,
@@ -994,11 +1019,13 @@ Whisper._test = {
   COLORS = { default = COLOR_DEFAULT, whispered = COLOR_WHISPERED, failed = COLOR_FAILED },
   CreateChatBubbleButton = CreateChatBubbleButton,
   TintChatBubble = TintChatBubble,
-  FillBubbleTooltip = BuildWhisperTooltip,
+  FillBubbleTooltip = Whisper.BuildWhisperTooltip,
   GetDetailButton = function() return orderViewButton end,
   GetSettingsButton = function() return settingsButton end,
   GetBrowseFrame = function() return browseFrame end,
   GetCurrentOrder = function() return currentOrder end,
+  SetCurrentOrder = function(order) currentOrder = order end,
+  OnCustomerName = OnCustomerName,
   OrderFromElementData = GetOrderFromElementData,
   -- The order a row bubble stands for now, read only (no hide, no re-lay)
   RowOrder = function(btn)

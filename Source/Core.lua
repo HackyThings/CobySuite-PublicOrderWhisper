@@ -29,7 +29,7 @@ PublicOrderWhisper.VERSION = VERSION
 -- Slash commands
 --
 -- Registered through CobySuite.Slash, which generates help and version, with
--- the suite's standard commands (settings, guide, changelog, debug, test)
+-- the suite's standard commands (settings, guide, changelog, addons, debug, test)
 -- from CobySuite.Slash.StandardCommands and this addon's own in extra.
 -- There is no main window, so there is no standard show; "show" stays an
 -- unlisted alias of settings, as it was. A bare /pow opens the settings.
@@ -52,6 +52,30 @@ local function ToggleSettings()
   end
 end
 
+-- "/pow addons" and the guide's last section: every addon by Cobanyte
+-- (CobySuite.UI.ToggleAddonsWindow, the same list in each addon)
+PublicOrderWhisper.AddonsList = {
+  host = "PublicOrderWhisper", slash = "/pow", icon = PublicOrderWhisper.ICON,
+  message = Message,
+  state = function() return PUBLIC_ORDER_WHISPER_WINDOW_STATE end,   -- the list remembers its place and size
+}
+
+-- "/pow reset windows" (CobySuite.UI.ConfirmResetWindows): every window the
+-- addon builds saves its place into PUBLIC_ORDER_WHISPER_WINDOW_STATE, so that
+-- one table finds them all (settings, guide, changelog, addons list); the
+-- debug log window saves nothing, so it is listed by itself
+PublicOrderWhisper.WindowsReset = {
+  host = "PublicOrderWhisper", title = "Coby's Public Order Whisper", icon = PublicOrderWhisper.ICON,
+  message = Message,
+  states = { function() return PUBLIC_ORDER_WHISPER_WINDOW_STATE end },
+  windows = function() return { PublicOrderWhisper.DebugWindow } end,
+}
+
+local function ResetSettings()
+  PublicOrderWhisper.Config.Reset()
+  Message("Settings restored to defaults.")
+end
+
 PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
   key = "PUBLICORDERWHISPER",
   slashes = { "/pow", "/publicorderwhisper" },
@@ -71,9 +95,13 @@ PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
   onEmpty = ToggleSettings,   -- the suite's standard: a bare command opens settings when there is no main window
   commands = CobySuite_PublicOrderWhisper.Slash.StandardCommands({
     settings = ToggleSettings,
+    addons = PublicOrderWhisper.AddonsList,
     guide = function() if PublicOrderWhisper.Guide then PublicOrderWhisper.Guide.Toggle() end end,
     changelog = function() if PublicOrderWhisper.WhatsNew then PublicOrderWhisper.WhatsNew.Toggle() end end,
     debug = function() if PublicOrderWhisper.DebugWindow then PublicOrderWhisper.DebugWindow:Toggle() end end,
+    resetWindows = PublicOrderWhisper.WindowsReset,
+    -- a bare "/pow reset" is the older command that restores every setting
+    resetBare = ResetSettings,
     -- Development only: the suites are stripped from release builds, and
     -- the test command is hidden from help there. The whisper this command
     -- sent in 1.0.0 is /pow selftest; in a release build the fallback above
@@ -129,13 +157,8 @@ PublicOrderWhisper.HandleSlash = CobySuite_PublicOrderWhisper.Slash.Register({
           end
         end,
       },
-      {
-        name = "reset", help = "Restore every setting to its default",
-        run = function()
-          PublicOrderWhisper.Config.Reset()
-          Message("Settings restored to defaults.")
-        end,
-      },
+      -- help line only: the standard "reset windows" entry runs both
+      { usage = "reset", help = "Restore every setting to its default" },
     },
   }),
 })
@@ -195,5 +218,11 @@ end)
 EventUtil.RegisterOnceFrameEventAndCallback("PLAYER_LOGIN", function()
   -- A fresh install opens the guide; an update, the changelog
   if PublicOrderWhisper.WhatsNew then PublicOrderWhisper.WhatsNew.OnLogin() end
+  -- The suite's version check: a chat line when a newer release is out
+  CobySuite_PublicOrderWhisper.VersionCheck.Register({
+    key = "POW", addon = ADDON_NAME, title = "Coby's Public Order Whisper", color = PublicOrderWhisper.BRAND_COLOR,
+    enabled = function() return PublicOrderWhisper.Config.Get(PublicOrderWhisper.Config.Options.VERSION_CHECK) end,
+    log = function(fmt, ...) PublicOrderWhisper.Debug.Log("INIT", fmt, ...) end,
+  })
   PublicOrderWhisper.Debug.Log("INIT", "PLAYER_LOGIN complete")
 end)

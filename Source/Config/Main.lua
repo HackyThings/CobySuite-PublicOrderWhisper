@@ -13,6 +13,7 @@ local base = CobySuite_PublicOrderWhisper.Config.New({
     MARK_WHISPERED     = "mark_whispered",      -- tint the icon green for players whispered this session
     CHAT_FEEDBACK      = "chat_feedback",       -- print a chat line for each whisper sent
     OPEN_IN_CHAT       = "open_in_chat",        -- put the whisper in the chat box to edit instead of sending it
+    VERSION_CHECK      = "version_check",       -- share the version with guild and group, a chat line when a newer one is out
   },
   defaults = {
     ["whisper_message"]    = "Hi! I can craft {item} for you. Send me a personal order!",
@@ -22,6 +23,7 @@ local base = CobySuite_PublicOrderWhisper.Config.New({
     ["mark_whispered"]     = true,
     ["chat_feedback"]      = true,
     ["open_in_chat"]       = false,
+    ["version_check"]      = true,
   },
   -- Set refuses a failing value and InitializeData puts the default back for
   -- a failing saved one (a hand-edited or damaged file). Everything 1.0.0
@@ -34,6 +36,7 @@ local base = CobySuite_PublicOrderWhisper.Config.New({
     ["mark_whispered"]     = { type = "boolean" },
     ["chat_feedback"]      = { type = "boolean" },
     ["open_in_chat"]       = { type = "boolean" },
+    ["version_check"]      = { type = "boolean" },
   },
   debug = PublicOrderWhisper.Debug,
   onSet = function(name, old, value)

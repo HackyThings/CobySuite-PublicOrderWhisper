@@ -16,6 +16,19 @@ PublicOrderWhisper.Data = PublicOrderWhisper.Data or {}
 
 PublicOrderWhisper.Data.Changelog = {
   {
+    version = "1.0.6",
+    title = "Reset windows, more addons and a version notice",
+    date = "2026-10-11",
+    new = {
+      "{/pow} reset windows: every window back to its default place and size",
+      "{/pow} addons: every addon by Cobanyte, with CurseForge links",
+      "Newer version notice: a chat line when someone in your guild or group has a newer version",
+    },
+    fixed = {
+      "Order bubble: shows when the customer's name arrives late",
+    },
+  },
+  {
     version = "1.0.5",
     title = "Cooldown countdown and a visible gear",
     date = "2026-10-06",

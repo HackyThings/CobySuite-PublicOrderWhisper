@@ -15,9 +15,9 @@ Public orders have no reply button. Coby's Public Order Whisper puts a chat bubb
 - The bubble turns **green** once you have whispered that player (you can turn this off), and flashes **red** (dropping the green) if the game says they are offline or don't exist. Green clears when you log out or reload.
 - A per-player cooldown (60 seconds, up to 120, or off), so a double click or a second order from the same customer doesn't whisper them twice. The bubble's tooltip counts it down.
 - Optional: put the whisper in your chat box first, to edit it before you press Enter. That click doesn't mark the bubble or start the cooldown.
-- Ready-made messages to start from, and Send test to myself to see how yours reads.
+- Ready-made messages to start from, and Send Test to Myself to see how yours reads.
 
-## Quick Start
+## Quick start
 
 1. At a profession table, open the crafting orders and pick the **Public** tab.
 2. Hover a bubble to see who it whispers and your message.
@@ -31,13 +31,15 @@ WoW whispers hold 255 bytes; some characters use more than one, and an item link
 
 **Manual:** Drop the `PublicOrderWhisper` folder into your `Interface/AddOns/`. No dependencies.
 
-## Slash Commands
+## Slash commands
 
 ```
 /pow settings              Open or close the settings window
 /pow guide                 Open or close the feature guide
 /pow changelog             Open or close the changelog: what changed in each version
+/pow addons                Every addon by Cobanyte, with CurseForge links and pictures (also /pow other, /pow more)
 /pow debug                 Open or close the debug log window
+/pow reset windows         Put every window back to its default place and size
 /pow message               Show the current whisper message
 /pow message <text>        Set the whisper message
 /pow cooldown              Show the whisper cooldown
@@ -50,15 +52,15 @@ WoW whispers hold 255 bytes; some characters use more than one, and an item link
 
 `/pow` on its own opens the settings; `/publicorderwhisper` works the same as `/pow`.
 
-## Guide and What's New
+## Guide and what's new
 
 `/pow guide` (or **Guide** in the settings) opens a short guide; it opens by itself for new players. `/pow changelog` lists what changed; after later updates it opens by itself.
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders window, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; **Undo edits** drops them.
+Open with `/pow settings`, the gear beside the close button of the crafting orders window, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; **Undo Edits** drops them.
 
-- **Message:** your whisper, the placeholder chips, an example as the customer sees it, its length in bytes, Send test to myself, and ready-made messages.
+- **Message:** your whisper, the placeholder chips, an example as the customer sees it, its length in bytes, Send Test to Myself, and ready-made messages.
 - **Bubbles:** show the bubble in the order list, on an open order, or both.
 - **Sending:** send right away or put it in your chat box first, a chat line after each whisper, the green mark, and the cooldown.
 
@@ -76,7 +78,7 @@ Open with `/pow settings`, the gear beside the close button of the crafting orde
 
 GPL-2.0. See [LICENSE](LICENSE).
 
-## Issues / Feedback
+## Issues / feedback
 
 Found a bug? Run `/pow debug`, press **Copy Last 250** and send the text with a line about what you were doing. The log holds the addon version, your WoW build and your settings.
 

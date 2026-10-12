@@ -2,7 +2,8 @@
 -- PublicOrderWhisper Settings Window
 --
 -- The suite's standard settings window (CobySuite.UI.CreateSettingsWindow):
--- a sidebar with Message, Bubbles and Sending, staged edits that Apply
+-- a sidebar with Message (ending in the suite's version check, an Updates
+-- section), Bubbles and Sending, staged edits that Apply
 -- writes through Config.Set, Cancel, Defaults (with its own confirm popup)
 -- and a Guide button that opens the feature guide (UI/Guide.lua).
 --
@@ -102,9 +103,9 @@ local function BuildMessage(panel, w)
       { text = "{item}", label = "{item} Item link",
         tooltip = "The crafted item as a link, at the quality the order asks for when the game knows it." },
       { text = "{name}", label = "{name} Their name",
-        tooltip = "The customer's name, without the realm when they're on yours." },
+        tooltip = "The customer's name, without the realm." },
       { text = "{tip}", label = "{tip} Tip",
-        tooltip = "The tip on the order, in gold and silver. An order with no tip reads 0g." },
+        tooltip = "The order's tip, in coins; 0g when there is none." },
     },
   }
   w.MessageBox = rows.message.Box   -- for the suites and the Verify catalog
@@ -153,7 +154,7 @@ local function BuildMessage(panel, w)
   }
 
   rows.testButton = panel:Button{
-    text = "Send test to myself",
+    text = "Send Test to Myself",
     width = 180,
     icon = BUBBLE,
     tooltip = "Whispers you the message in the box, with a sample item and a 150g tip, even before you press Apply.",
@@ -176,11 +177,13 @@ local function BuildMessage(panel, w)
       end
       return labels, values
     end,
-    buttonText = "Use this message",
+    buttonText = "Use This Message",
     buttonTooltip = "Puts this message in the box. Nothing is saved until you press Apply.",
     onClick = function(text) UseStarter(text) end,
     description = "Pick one, then make it yours.",
   }
+
+  CobySuite_PublicOrderWhisper.VersionCheck.AddSettingsRows(panel, Opt.VERSION_CHECK)
 end
 
 -------------------------------------------------------------------------------
@@ -249,7 +252,7 @@ local function BuildBubbles(panel)
     },
   }
   panel:Note{
-    text = "Both bubbles are off, so there is nothing to click. Send test to myself still works.",
+    text = "Both bubbles are off, so there is nothing to click. Send Test to Myself still works.",
     color = U.Colors.CAUTION_ORANGE,
     visibleWhen = function(get) return not get(Opt.SHOW_LIST_BUTTONS) and not get(Opt.SHOW_DETAIL_BUTTON) end,
   }

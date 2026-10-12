@@ -56,7 +56,7 @@ Guide.SECTIONS = {
         "Write it in the settings, under " .. Key("Message") .. ", or pick one under " .. Key("Ready-made messages") .. ". The example below the box shows how a customer reads it",
         Key("{item}") .. " becomes a link to the crafted item, at the quality the order asks for when the game has that link",
         Key("{name}") .. " becomes the customer's name, " .. Key("{tip}") .. " the tip on the order (0g when there is none). Click a chip under the box to put one in",
-        Key("Send test to myself") .. " tries the text in the box, before you press Apply",
+        Key("Send Test to Myself") .. " tries the text in the box, before you press Apply",
       }),
       Note("A whisper holds 255 bytes. The item link takes about 100, and some characters use more than one byte. A message that runs over is not sent, and chat says so."),
     },
@@ -91,16 +91,19 @@ Guide.SECTIONS = {
         Key("Bubbles") .. ": the bubble in the order list and the bubble on an open order",
         Key("Sending") .. ": send right away or put the whisper in your chat box first, a chat line for each whisper, the green mark and the cooldown",
         Key("Put it in my chat box first") .. " lets you edit each whisper, and Enter sends it",
-        "Changes wait for " .. Key("Apply") .. ". " .. Key("Undo edits") .. " or closing the window drops them",
+        "Changes wait for " .. Key("Apply") .. ". " .. Key("Undo Edits") .. " or closing the window drops them",
       }),
       Note("In chat box mode the addon can't tell whether you sent the whisper, so it adds no green mark, cooldown or red flash. Earlier marks and cooldowns still apply."),
     },
     try = {
       { "/pow settings", "Open or close the settings window" },
       { "/pow reset", "Put every setting back to its default" },
+      { "/pow reset windows", "Put every window back to its default place and size" },
     },
   },
 }
+-- The last section in every addon's guide: the list of every addon by Cobanyte
+Guide.SECTIONS[#Guide.SECTIONS + 1] = CobySuite_PublicOrderWhisper.UI.AddonsGuideSection(PublicOrderWhisper.AddonsList)
 
 local guide = CobySuite_PublicOrderWhisper.UI.CreateGuideWindow({
   name = "PublicOrderWhisperGuideWindow",

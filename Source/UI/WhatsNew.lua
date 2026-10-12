@@ -17,7 +17,7 @@ PublicOrderWhisper.WhatsNew = WhatsNew
 
 local changelog = CobySuite_PublicOrderWhisper.UI.CreateWhatsNewWindow({
   name = "PublicOrderWhisperChangelogWindow",
-  title = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. ": What's New",
+  title = U.WrapColor(PublicOrderWhisper.BRAND_COLOR, "Coby's Public Order Whisper") .. ": What's new",
   icon = PublicOrderWhisper.ICON,
   intro = "What changed in each version of Coby's Public Order Whisper, newest first. Click a version to open or close it.",
   footer = "Open this window any time with " .. U.WrapColor(U.Colors.HELP_COMMAND, "/pow changelog"),
