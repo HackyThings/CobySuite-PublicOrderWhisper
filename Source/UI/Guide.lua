@@ -15,18 +15,11 @@ PublicOrderWhisper.Guide = Guide
 
 local U = CobySuite_PublicOrderWhisper.Utilities
 local ICONS = "Interface\\Icons\\"
-local BULLET = "\226\128\162 "
 
--- A command, button or option name, in the slash help's gold
-local function Key(text) return U.WrapColor(U.Colors.HELP_COMMAND, text) end
--- A caveat, in gray
-local function Note(text) return U.WrapColor(U.Colors.LABEL_GRAY, text) end
--- Bulleted lines, one paragraph
-local function Bullets(lines)
-  local out = {}
-  for i, line in ipairs(lines) do out[i] = BULLET .. line end
-  return table.concat(out, "\n")
-end
+-- The suite's guide text helpers: Key (a command, button or option name, in the
+-- slash help's gold), Note (a caveat, in gray) and Bullets (lines, one paragraph)
+local T = CobySuite_PublicOrderWhisper.UI.GuideText
+local Key, Note, Bullets = T.Key, T.Note, T.Bullets
 
 Guide.SECTIONS = {
   {

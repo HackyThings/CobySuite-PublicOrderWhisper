@@ -207,11 +207,10 @@ end
 EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
   -- Settings saved before this login mean a player of an earlier release:
   -- What's New records the version instead of opening the new-player guide
-  PublicOrderWhisper.hadSavedConfig = type(PUBLIC_ORDER_WHISPER_CONFIG) == "table"
-    and next(PUBLIC_ORDER_WHISPER_CONFIG) ~= nil
   if PublicOrderWhisper.Config.InitializeData then
     PublicOrderWhisper.Config.InitializeData()
   end
+  PublicOrderWhisper.hadSavedConfig = PublicOrderWhisper.Config.HadSavedData()
   PublicOrderWhisper.Debug.Log("INIT", "PublicOrderWhisper v%s loaded", VERSION)
 end)
 

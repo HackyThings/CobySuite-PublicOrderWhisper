@@ -39,12 +39,10 @@ local base = CobySuite_PublicOrderWhisper.Config.New({
     ["version_check"]      = { type = "boolean" },
   },
   debug = PublicOrderWhisper.Debug,
-  onSet = function(name, old, value)
-    PublicOrderWhisper.EventBus:Fire(PublicOrderWhisper.Events.ConfigChanged, name, value, old)
-  end,
-  onReset = function()
-    PublicOrderWhisper.EventBus:Fire(PublicOrderWhisper.Events.ConfigChanged)
-  end,
+  -- ConfigChanged (name, value, old) after a Set, with no arguments after a reset
+  bus = PublicOrderWhisper.EventBus,
+  event = PublicOrderWhisper.Events.ConfigChanged,
+  ensureTables = { "PUBLIC_ORDER_WHISPER_WINDOW_STATE" },
 })
 
 -- Install onto PublicOrderWhisper.Config namespace
@@ -54,6 +52,7 @@ Config.CheckValue    = base.CheckValue
 Config.Get           = base.Get
 Config.Set           = base.Set
 Config.Reset         = base.Reset
+Config.HadSavedData  = base.HadSavedData
 
 -- The longest whisper WoW sends, in bytes as the client counts them (a
 -- character takes one to four; in game a 312-byte, 191-letter whisper was
@@ -68,10 +67,6 @@ Config.MAX_COOLDOWN = 120
 ---------------------------------------------------------------------------
 function Config.InitializeData()
   base.InitializeData()
-
-  if type(PUBLIC_ORDER_WHISPER_WINDOW_STATE) ~= "table" then
-    PUBLIC_ORDER_WHISPER_WINDOW_STATE = {}
-  end
 
   PublicOrderWhisper.Debug.Log("CONFIG", "Config initialized")
 end

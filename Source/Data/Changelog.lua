@@ -16,6 +16,14 @@ PublicOrderWhisper.Data = PublicOrderWhisper.Data or {}
 
 PublicOrderWhisper.Data.Changelog = {
   {
+    version = "1.0.7",
+    title = "Patch 12.1.5",
+    date = "2026-10-13",
+    changed = {
+      "Updated for patch 12.1.5",
+    },
+  },
+  {
     version = "1.0.6",
     title = "Reset windows, more addons and a version notice",
     date = "2026-10-11",

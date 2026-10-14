@@ -4,6 +4,12 @@ All notable changes to Coby's Public Order Whisper are documented here. Format f
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-10-13
+
+### Changed
+
+- Updated for World of Warcraft patch 12.1.5.
+
 ## [1.0.6] - 2026-10-11
 
 ### Added
@@ -119,7 +125,8 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.7
 [1.0.6]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.6
 [1.0.5]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.5
 [1.0.4]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.4

@@ -86,18 +86,17 @@ local COLOR_FAILED    = U.Colors.WARNING_RED
 local FAILURE_PATTERN = U.FormatToPattern(ERR_CHAT_PLAYER_NOT_FOUND_S, true)
 
 -------------------------------------------------------------------------------
--- Chat output. Errors always print; the per-whisper confirmation is gated by
--- the "chat line for each whisper" setting. The printer is resolved per call
+-- Chat output. Errors always print; the per-whisper confirmation is a notice
+-- (second argument true), which the messenger's gate holds back unless the
+-- "chat line for each whisper" setting is on. The printer is resolved per call
 -- so a test can quiet it.
 -------------------------------------------------------------------------------
-local function Message(text)
-  PublicOrderWhisper.Utilities.Message(text)
+local function Message(text, notice)
+  PublicOrderWhisper.Utilities.Message(text, notice)
 end
 
 local function Notify(text)
-  if Config.Get(Config.Options.CHAT_FEEDBACK) then
-    Message(text)
-  end
+  Message(text, true)
 end
 
 -------------------------------------------------------------------------------
