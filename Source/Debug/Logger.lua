@@ -5,7 +5,7 @@
 PublicOrderWhisper.Debug = CobySuite_PublicOrderWhisper.Debug.NewLogger({
   addonName = "PublicOrderWhisper",
   categories = {
-    "INIT", "CONFIG", "WHISPER", "DIAG",
+    "INIT", "CONFIG", "WHISPER",
   },
   savedVariable = "PUBLIC_ORDER_WHISPER_DEBUG_LOG",
   sessionHeader = function(lines)

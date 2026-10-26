@@ -80,7 +80,7 @@ Guide.SECTIONS = {
     summary = "Edit before sending, and choose which bubbles show",
     body = {
       Bullets({
-        "Open them with " .. Key("/pow settings") .. ", the gear beside the crafting orders window's close button, the minimap addon list, or " .. Key("Options > AddOns"),
+        "Open them with " .. Key("/pow settings") .. ", the gear beside the crafting orders window's close button, or the minimap addon list.",
         Key("Bubbles") .. ": the bubble in the order list and the bubble on an open order",
         Key("Sending") .. ": send right away or put the whisper in your chat box first, a chat line for each whisper, the green mark and the cooldown",
         Key("Put it in my chat box first") .. " lets you edit each whisper, and Enter sends it",

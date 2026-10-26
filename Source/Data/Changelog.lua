@@ -12,9 +12,19 @@
 -- placeholders are named in words. Keep it in step with CHANGELOG.md:
 -- /release adds the entry.
 -------------------------------------------------------------------------------
-PublicOrderWhisper.Data = PublicOrderWhisper.Data or {}
-
 PublicOrderWhisper.Data.Changelog = {
+  {
+    version = "1.0.8",
+    title = "Small fixes",
+    date = "2026-10-25",
+    changed = {
+      "Your addons: {/pow addons} now lists Coby's Coinrot, A to Z, with new pictures",
+      "Settings: open them with {/pow settings} (no Options > AddOns page)",
+    },
+    fixed = {
+      "Several smaller bug fixes",
+    },
+  },
   {
     version = "1.0.7",
     title = "Patch 12.1.5",

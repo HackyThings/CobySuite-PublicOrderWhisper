@@ -205,11 +205,10 @@ end
 -- Startup sequence
 -------------------------------------------------------------------------------
 EventUtil.ContinueOnAddOnLoaded(ADDON_NAME, function()
+  PublicOrderWhisper.Config.InitializeData()
   -- Settings saved before this login mean a player of an earlier release:
-  -- What's New records the version instead of opening the new-player guide
-  if PublicOrderWhisper.Config.InitializeData then
-    PublicOrderWhisper.Config.InitializeData()
-  end
+  -- What's New records the version instead of opening the new-player guide.
+  -- HadSavedData answers from before InitializeData filled in the defaults.
   PublicOrderWhisper.hadSavedConfig = PublicOrderWhisper.Config.HadSavedData()
   PublicOrderWhisper.Debug.Log("INIT", "PublicOrderWhisper v%s loaded", VERSION)
 end)

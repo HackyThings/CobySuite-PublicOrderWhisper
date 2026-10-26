@@ -44,14 +44,16 @@ local function RelayRows()
 end
 
 -------------------------------------------------------------------------------
--- Test seams: the clock, the timer and the send, read through this table at
--- call time so the WhisperSuite can stand in for them (Tests.Override on
--- Whisper._test.seams) and no whisper leaves the client during a test. Production code always goes through them.
+-- Test seams: the clock, the timer, the send and the combat check, read
+-- through this table at call time so the WhisperSuite can stand in for them
+-- (Tests.Override on Whisper._test.seams) and no whisper leaves the client
+-- during a test. Production code always goes through them.
 -------------------------------------------------------------------------------
 local seams = {
   Now = function() return GetTime() end,
   After = function(seconds, fn) C_Timer.After(seconds, fn) end,
   Send = function(message, target) C_ChatInfo.SendChatMessage(message, "WHISPER", nil, target) end,
+  InCombat = function() return InCombatLockdown() end,
 }
 
 -------------------------------------------------------------------------------
@@ -81,9 +83,14 @@ local COLOR_WHISPERED = U.Colors.SUCCESS_GREEN
 local COLOR_DEFAULT   = U.Colors.HIGHLIGHT_WHITE
 local COLOR_FAILED    = U.Colors.WARNING_RED
 
--- Locale-safe pattern for the "No player named X is currently playing"
--- system message: the format string with its %s turned into a capture.
-local FAILURE_PATTERN = U.FormatToPattern(ERR_CHAT_PLAYER_NOT_FOUND_S, true)
+-- The pattern for the "No player named X is currently playing" system
+-- message: the client's format string with its %s turned into a capture.
+-- nil when the client's string has a positional argument ("%1$s"), which
+-- FormatToPattern cannot turn into a pattern: failure detection is off then.
+local failurePattern = U.FormatToPattern(ERR_CHAT_PLAYER_NOT_FOUND_S, true)
+if not failurePattern then
+  Debug.Warn("INIT", "The client's 'player not found' message has no usable pattern; failed whispers are not detected")
+end
 
 -------------------------------------------------------------------------------
 -- Chat output. Errors always print; the per-whisper confirmation is a notice
@@ -136,25 +143,39 @@ end
 -- customer cell, and a customer named like a word of the item ("Silk" on a
 -- Silk item) would otherwise put the bubble on the item.
 -------------------------------------------------------------------------------
-local function FindFontString(row, accept)
-  for _, child in ipairs({row:GetChildren()}) do
-    for _, region in ipairs({child:GetRegions()}) do
-      if region:IsObjectType("FontString") and accept(region:GetText()) then
+-- The first of the regions passed whose text is name (exact) or holds it.
+-- Varargs rather than table wraps: this runs for every row on each re-lay.
+local function MatchingFontString(name, exact, ...)
+  for i = 1, select("#", ...) do
+    local region = select(i, ...)
+    if region:IsObjectType("FontString") then
+      local text = region:GetText()
+      if text == name or (not exact and text ~= nil and text:find(name, 1, true) ~= nil) then
         return region
       end
-    end
-  end
-  for _, region in ipairs({row:GetRegions()}) do
-    if region:IsObjectType("FontString") and accept(region:GetText()) then
-      return region
     end
   end
   return nil
 end
 
+local function MatchingInChildren(name, exact, ...)
+  for i = 1, select("#", ...) do
+    local region = MatchingFontString(name, exact, (select(i, ...)):GetRegions())
+    if region then return region end
+  end
+  return nil
+end
+
+local function FindFontString(row, name, exact)
+  return MatchingInChildren(name, exact, row:GetChildren())
+      or MatchingFontString(name, exact, row:GetRegions())
+end
+
+-- The name cell, and whether its text is the name exactly
 local function FindPlayerNameRegion(row, customerName)
-  return FindFontString(row, function(text) return text == customerName end)
-      or FindFontString(row, function(text) return text ~= nil and text:find(customerName, 1, true) ~= nil end)
+  local region = FindFontString(row, customerName, true)
+  if region then return region, true end
+  return FindFontString(row, customerName, false), false
 end
 
 -------------------------------------------------------------------------------
@@ -333,6 +354,7 @@ function Whisper.SendWhisperForOrder(order)
   local customerName = order.customerName
   if not customerName or customerName == "" then
     Message("Cannot whisper: this order has no customer name.")
+    Debug.Warn("WHISPER", "Not sent: the order has no customer name (orderID=%s)", tostring(order.orderID))
     return
   end
 
@@ -347,6 +369,7 @@ function Whisper.SendWhisperForOrder(order)
   if not message then
     Message("No message configured. Set one in /pow settings.")
     NoteAttempt(customerName, "no-message")
+    Debug.Warn("WHISPER", "Not sent to %s: no message configured", customerName)
     return
   end
 
@@ -384,11 +407,13 @@ function Whisper.SendTest(template)
   template = template or Config.Get(Config.Options.WHISPER_MESSAGE)
   if not template or strtrim(template) == "" then
     Message("No message configured. Set one in /pow settings.")
+    Debug.Warn("WHISPER", "Test not sent: no message configured")
     return
   end
   local message = U.ExpandPlaceholders(template, Whisper.SampleValues())
   if #message > Config.MAX_MESSAGE_LENGTH then
     Message(TooLongText("Test not sent", #message))
+    Debug.Warn("WHISPER", "Test message too long (%d bytes)", #message)
     return
   end
   seams.Send(message, UnitName("player"))
@@ -535,23 +560,23 @@ local function OnRowButtonClick(btn)
   end
 end
 
--- Fills tooltip for the row's current order; false when the button no longer
--- stands for one (it has just been hidden).
+-- Fills tooltip for the row's current order and returns that order; false
+-- when the button no longer stands for one (it has just been hidden).
 local function BuildRowTooltip(tooltip, btn)
   local order = ResolveRowOrder(btn)
   if not order then return false end
   Whisper.BuildWhisperTooltip(tooltip, order.customerName)
-  return true
+  return order
 end
 
 -- Also the cooldown's refresh: each second resolves the row again, so a row
 -- reused for another order shows that one
 OnRowButtonEnter = function(btn)
   GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-  if BuildRowTooltip(GameTooltip, btn) then
+  local order = BuildRowTooltip(GameTooltip, btn)
+  if order then
     GameTooltip:Show()
-    local order = ResolveRowOrder(btn)
-    KeepCooldownFresh(btn, order and order.customerName, OnRowButtonEnter)
+    KeepCooldownFresh(btn, order.customerName, OnRowButtonEnter)
   else
     GameTooltip:Hide()
   end
@@ -564,7 +589,13 @@ function Whisper.SetupRowWhisperButton(row, order)
   end
 
   local customerName = order.customerName
-  local nameRegion = FindPlayerNameRegion(row, customerName)
+  local btn = row._powWhisperBtn
+  -- The cell an exact match found last time, while it still holds this name
+  -- (rows are reused for other customers, so it is checked each time)
+  local nameRegion, exact = btn and btn._powNameRegion, true
+  if not (nameRegion and nameRegion:GetText() == customerName) then
+    nameRegion, exact = FindPlayerNameRegion(row, customerName)
+  end
   if not nameRegion then
     -- Once: this runs for every row on every re-lay, and a flood would push
     -- everything else out of the debug log
@@ -576,9 +607,8 @@ function Whisper.SetupRowWhisperButton(row, order)
     return
   end
 
-  local btn = row._powWhisperBtn
   if not btn then
-    if InCombatLockdown() then
+    if seams.InCombat() then
       -- Root rule: no CreateFrame in combat. Blizzard keeps the orders
       -- window open through combat and a scroll or search still re-lays
       -- the rows, so a never-used row waits for the end of combat (one
@@ -595,6 +625,7 @@ function Whisper.SetupRowWhisperButton(row, order)
     btn:SetScript("OnLeave", GameTooltip_Hide)
     row._powWhisperBtn = btn
   end
+  btn._powNameRegion = exact and nameRegion or nil
 
   btn:ClearAllPoints()
   btn:SetPoint("RIGHT", nameRegion, "RIGHT", -2, 0)
@@ -631,6 +662,8 @@ local function OnOrderViewClick()
   end
 end
 
+-- The detail bubble on orderInfo (any frame: one without Blizzard's name
+-- fields gets a fixed place), hidden until RefreshOrderViewButton shows it
 local function CreateOrderViewButton(orderInfo)
   local btn = CreateChatBubbleButton(orderInfo, DETAIL_BTN_SIZE)
 
@@ -664,9 +697,6 @@ local function CreateOrderViewButton(orderInfo)
     if GameTooltip:IsOwned(b) and b:IsVisible() then Rebuild(b) end
   end)
   btn:Hide()
-
-  orderViewButton = btn
-  Debug.Log("INIT", "Order detail whisper button created")
   return btn
 end
 
@@ -773,7 +803,8 @@ function Whisper.SetupHooks()
   -- open mid-fight), and every reader copes with them not being there yet.
   local function BuildWidgets()
     if orderView and orderView.OrderInfo and not orderViewButton then
-      CreateOrderViewButton(orderView.OrderInfo)
+      orderViewButton = CreateOrderViewButton(orderView.OrderInfo)
+      Debug.Log("INIT", "Order detail whisper button created")
     end
     if browseFrame and browseFrame.OrderList and not settingsButton then
       -- Settings gear in the title bar, sized to the close X. Parented to
@@ -830,17 +861,17 @@ PublicOrderWhisper.EventBus:Register(configListener, { PublicOrderWhisper.Events
 -- Whisper failure detection via CHAT_MSG_SYSTEM
 --
 -- When a whisper fails (player offline / does not exist), WoW prints a
--- system message. Within a short window after sending, that reverts the
--- tracking, flashes the icon red and tells the user.
+-- system message. Within a short window after sending, that takes the green
+-- mark away (the cooldown stays), flashes the icon red and tells the user.
 -------------------------------------------------------------------------------
 local function HandleSystemMessage(message)
-  if not next(pendingWhispers) then return end
+  if not failurePattern or not next(pendingWhispers) then return end
   -- A secret string cannot be matched or used as a table key
   if U.IsSecret(message) then return end
 
   -- string.match rather than message:match: no method lookup on the
   -- message, kept as a second guard behind the one above
-  local failedName = string.match(message, FAILURE_PATTERN)
+  local failedName = string.match(message, failurePattern)
   if not failedName then return end
 
   local expireTime = pendingWhispers[failedName]
@@ -978,7 +1009,7 @@ do
   seterrorhandler(installedHandler)
   local function Check()
     ReportHandlerState(geterrorhandler(), installedHandler,
-      function(text) Debug.Log("INIT", "%s", text) end, handlerState)
+      function(text) Debug.Warn("INIT", "%s", text) end, handlerState)
   end
   Check()
   -- Error addons that load later install their handler after ours
@@ -1025,6 +1056,21 @@ Whisper._test = {
   GetCurrentOrder = function() return currentOrder end,
   SetCurrentOrder = function(order) currentOrder = order end,
   OnCustomerName = OnCustomerName,
+  -- The detail bubble: built on a scratch parent, its click and its refresh;
+  -- each swap puts another button or pattern in place and returns the old one
+  CreateOrderViewButton = CreateOrderViewButton,
+  OnOrderViewClick = OnOrderViewClick,
+  RefreshOrderViewButton = RefreshOrderViewButton,
+  SwapDetailButton = function(btn)
+    local old = orderViewButton
+    orderViewButton = btn
+    return old
+  end,
+  SwapFailurePattern = function(pattern)
+    local old = failurePattern
+    failurePattern = pattern
+    return old
+  end,
   OrderFromElementData = GetOrderFromElementData,
   -- The order a row bubble stands for now, read only (no hide, no re-lay)
   RowOrder = function(btn)

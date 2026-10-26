@@ -4,6 +4,20 @@ All notable changes to Coby's Public Order Whisper are documented here. Format f
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-25
+
+### Fixed
+
+- Several smaller bug fixes.
+
+### Removed
+
+- Coby's Public Order Whisper no longer has a page under the game's Options > AddOns. Open its settings with `/pow settings`, the gear beside the crafting orders window's close button, or the minimap's addon list.
+
+### Changed
+
+- **Your other addons** (`/pow addons`) now lists Coby's Coinrot, sorted A to Z, with new pictures of each addon.
+
 ## [1.0.7] - 2026-10-13
 
 ### Changed
@@ -125,7 +139,8 @@ Initial release of Public Order Whisper, built for World of Warcraft Midnight pa
 - Whispers that would run past WoW's 255-character limit with the item link are held back with a chat message instead of failing silently.
 - `/pow message <text>`, `/pow cooldown <seconds>`, `/pow test`, `/pow reset`, `/pow debug`, `/pow version`, `/pow help`.
 
-[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/compare/v1.0.8...HEAD
+[1.0.8]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.8
 [1.0.7]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.7
 [1.0.6]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.6
 [1.0.5]: https://github.com/HackyThings/CobySuite-PublicOrderWhisper/releases/tag/v1.0.5

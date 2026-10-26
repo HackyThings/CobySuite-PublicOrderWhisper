@@ -63,10 +63,7 @@ Config.MAX_MESSAGE_LENGTH = 255
 Config.MAX_COOLDOWN = 120
 
 ---------------------------------------------------------------------------
--- InitializeData: wraps base with addon-specific SavedVariable init
+-- InitializeData: the saved settings checked and their defaults filled in
+-- (the base logs what it did)
 ---------------------------------------------------------------------------
-function Config.InitializeData()
-  base.InitializeData()
-
-  PublicOrderWhisper.Debug.Log("CONFIG", "Config initialized")
-end
+Config.InitializeData = base.InitializeData

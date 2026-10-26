@@ -4,7 +4,7 @@
   <img src="https://raw.githubusercontent.com/HackyThings/CobySuite-PublicOrderWhisper/main/.publish-meta/icon/public-order-whisper-224.jpg" width="160" alt="Coby's Public Order Whisper">
 </p>
 
-A whisper button on public crafting orders in WoW Midnight (12.1).
+A whisper button on public crafting orders in WoW Midnight.
 
 Public orders have no reply button. Coby's Public Order Whisper puts a chat bubble after every customer's name: one click whispers them your message, with the item they asked for linked in, so you can offer to craft it as a personal order.
 
@@ -58,7 +58,7 @@ WoW whispers hold 255 bytes; some characters use more than one, and an item link
 
 ## Settings
 
-Open with `/pow settings`, the gear beside the close button of the crafting orders window, the minimap addon list, or Options > AddOns. Changes wait for **Apply**; **Undo Edits** drops them.
+Open with `/pow settings`, the gear beside the close button of the crafting orders window, or the minimap addon list. Changes wait for **Apply**; **Undo Edits** drops them.
 
 - **Message:** your whisper, the placeholder chips, an example as the customer sees it, its length in bytes, Send Test to Myself, and ready-made messages.
 - **Bubbles:** show the bubble in the order list, on an open order, or both.

@@ -4,7 +4,7 @@
 -- The suite's standard settings window (CobySuite.UI.CreateSettingsWindow):
 -- a sidebar with Message (ending in the suite's version check, an Updates
 -- section), Bubbles and Sending, staged edits that Apply
--- writes through Config.Set, Cancel, Defaults (with its own confirm popup)
+-- writes through Config.Set, Undo Edits, Defaults (with its own confirm popup)
 -- and a Guide button that opens the feature guide (UI/Guide.lua).
 --
 -- The Message page reads the box's draft, not the staged value: the
@@ -12,9 +12,7 @@
 -- and an emptied box (which stages nothing) says so and sends no test.
 -- Built at load, so opening it never creates frames in combat; the controls
 -- are painted from config on every show, and a ConfigChanged event
--- (/pow message, /pow cooldown, /pow reset) repaints an open window. The
--- addon is also listed under Options > AddOns with a button that opens this
--- window (CobySuite.UI.RegisterSettingsCategory).
+-- (/pow message, /pow cooldown, /pow reset) repaints an open window.
 -------------------------------------------------------------------------------
 
 local Config = PublicOrderWhisper.Config
@@ -67,17 +65,20 @@ local function WhisperLine(message)
   return prefix .. message
 end
 
+-- The game's default whisper pink, for a chat setup that has no whisper color
+local DEFAULT_WHISPER_COLOR = { 1, 0.5, 1 }
+
 local function WhisperColor()
   local info = ChatTypeInfo and ChatTypeInfo.WHISPER
   if info and info.r then return { info.r, info.g, info.b } end
-  return { 1, 0.5, 1 }
+  return DEFAULT_WHISPER_COLOR
 end
 
 local function HasDraft() return Draft() ~= "" end
 -- Placeholders match in any case ({TIP} is filled in too), as the expander does
 local function UsesTip() return Draft():lower():find("{tip}", 1, true) ~= nil end
 
--- A ready-made message into the box, staged (Cancel puts the saved one back)
+-- A ready-made message into the box, staged (Undo Edits puts the saved one back)
 local function UseStarter(text)
   window.MessageBox:SetCommittedValue(text)
   window:Stage(Opt.WHISPER_MESSAGE, text)
@@ -344,20 +345,3 @@ end
 function Config.OpenSettings()
   window:Open()
 end
-
--------------------------------------------------------------------------------
--- Options > AddOns entry (registered once this addon has finished loading)
--------------------------------------------------------------------------------
-EventUtil.ContinueOnAddOnLoaded("PublicOrderWhisper", function()
-  UI.RegisterSettingsCategory({
-    name        = "Coby's Public Order Whisper",
-    brandColor  = PublicOrderWhisper.BRAND_COLOR,
-    version     = PublicOrderWhisper.VERSION,
-    description = {
-      "Adds a whisper button to public crafting orders that sends your message, with the item link, to the player who placed the order.",
-      "The settings live in the addon's own settings window.",
-    },
-    slash       = "/pow settings",
-    onOpen      = Config.OpenSettings,
-  })
-end)
